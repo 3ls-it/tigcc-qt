@@ -1,0 +1,27 @@
+# Build output
+build/
+debug/
+release/
+*.o
+*.a
+*.so
+*.d
+Makefile
+
+# qmake-generated files
+.qmake.stash
+moc_*.cpp
+moc_*.h
+ui_*.h
+qrc_*.cpp
+
+# Local IDE/editor files
+.vscode/
+.idea/
+*.kate-swp
+*.swp
+*~
+
+# Temporary conversion output
+qt3-converted/
+ui-generated/
