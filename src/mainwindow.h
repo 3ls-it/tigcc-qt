@@ -2,6 +2,7 @@
 #define TIGCC_QT_MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QString>
 
 #include "project.h"
 
@@ -18,7 +19,11 @@ private:
 	void
 	createNewProject();
 
+	void
+	saveCurrentProject();
+	
 	Project currentProject;
+	QString currentProjectFile;
 
 	ProjectTreeWidget *projectTree;
 	EditorWidget *editor;

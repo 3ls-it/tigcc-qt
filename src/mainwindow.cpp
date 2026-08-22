@@ -11,6 +11,7 @@
 #include "mainwindow.h"
 #include "buildoutputwidget.h"
 #include "editorwidget.h"
+#include "projectmanager.h"
 #include "projecttreewidget.h"
 
 
@@ -30,7 +31,7 @@ MainWindow::MainWindow(QWidget *parent)
 		QStringLiteral("TIGCC-Qt")
     );
 
-    resize(1200, 675);
+    resize(1440, 810);
 
 	projectTree->setProject(
 		currentProject
@@ -98,6 +99,17 @@ MainWindow::MainWindow(QWidget *parent)
     projectMenu->addAction(
 		QStringLiteral("Build Project")
     );
+
+	auto *saveProjectAction = projectMenu->addAction(
+		QStringLiteral("&Save Project")
+	);
+
+	connect(
+		saveProjectAction,
+		&QAction::triggered,
+		this,
+		&MainWindow::saveCurrentProject
+	);
 
     auto *helpMenu = menuBar()->addMenu(
 		QStringLiteral("&Help")
@@ -186,6 +198,29 @@ MainWindow::createNewProject()
 		projectDirectory
 	);
 
+	currentProjectFile =
+		QDir(projectDirectory).filePath(
+			QStringLiteral("%1.tigcc-project")
+				.arg(trimmedName)
+		);
+
+	ProjectManager projectManager;
+	QString errorMessage;
+
+	if (!projectManager.saveProject(
+			currentProject,
+			currentProjectFile,
+			&errorMessage
+		)) {
+		QMessageBox::critical(
+			this,
+			QStringLiteral("Cannot Save Project"),
+			errorMessage
+		);
+
+		return;
+	}
+
 	projectTree->setProject(
 		currentProject
 	);
@@ -198,5 +233,39 @@ MainWindow::createNewProject()
 	statusBar()->showMessage(
 		QStringLiteral("Created project “%1”")
 			.arg(currentProject.name())
+	);
+}
+
+
+void
+MainWindow::saveCurrentProject()
+{
+	if (currentProjectFile.isEmpty()) {
+		statusBar()->showMessage(
+			QStringLiteral("No project file is associated")
+		);
+
+		return;
+	}
+
+	ProjectManager projectManager;
+	QString errorMessage;
+
+	if (!projectManager.saveProject(
+			currentProject,
+			currentProjectFile,
+			&errorMessage
+		)) {
+		QMessageBox::critical(
+			this,
+			QStringLiteral("Cannot Save Project"),
+			errorMessage
+		);
+
+		return;
+	}
+
+	statusBar()->showMessage(
+		QStringLiteral("Project saved")
 	);
 }
