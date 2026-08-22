@@ -6,6 +6,9 @@
 
 #include "project.h"
 
+
+
+
 class BuildOutputWidget;
 class EditorWidget;
 class ProjectTreeWidget;
@@ -16,17 +19,23 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
 
 private:
-	void
-	createNewProject();
+	void createNewProject();
 
-    void
-    openProject();	
+    void openProject();	
 
-	void
-	saveCurrentProject();
+	void saveCurrentProject();
 
-    void
-    updateProjectInterface();
+    void updateProjectInterface();
+
+	void createSourceFile();
+
+	void createHeaderFile();
+
+	void createProjectFile(
+		const QString &subdirectory,
+		const QString &extension,
+		bool headerFile
+	);
 	
 	Project currentProject;
 	QString currentProjectFile;

@@ -1,13 +1,14 @@
 #include <QDir>
+#include <QFile>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QInputDialog>
 #include <QLineEdit>
-#include <QMessageBox>
 #include <QMenu>
 #include <QMenuBar>
+#include <QMessageBox>
 #include <QSplitter>
 #include <QStatusBar>
-#include <QFileInfo>
 
 #include "mainwindow.h"
 #include "buildoutputwidget.h"
@@ -115,6 +116,30 @@ MainWindow::MainWindow(QWidget *parent)
 		&QAction::triggered,
 		this,
 		&MainWindow::saveCurrentProject
+	);
+
+	projectMenu->addSeparator();
+
+	auto *newSourceFileAction = projectMenu->addAction(
+		QStringLiteral("New Source File")
+	);
+
+	connect(
+		newSourceFileAction,
+		&QAction::triggered,
+		this,
+		&MainWindow::createSourceFile
+	);
+
+	auto *newHeaderFileAction = projectMenu->addAction(
+		QStringLiteral("New Header File")
+	);
+
+	connect(
+		newHeaderFileAction,
+		&QAction::triggered,
+		this,
+		&MainWindow::createHeaderFile
 	);
 
     auto *helpMenu = menuBar()->addMenu(
@@ -344,3 +369,173 @@ MainWindow::openProject()
 			.arg(currentProject.name())
 	);
 }
+
+
+void
+MainWindow::createSourceFile()
+{
+	createProjectFile(
+		QStringLiteral("src"),
+		QStringLiteral(".c"),
+		false
+	);
+}
+
+
+void
+MainWindow::createHeaderFile()
+{
+	createProjectFile(
+		QStringLiteral("include"),
+		QStringLiteral(".h"),
+		true
+	);
+}
+
+
+void
+MainWindow::createProjectFile(
+	const QString &subdirectory,
+	const QString &extension,
+	bool headerFile
+)
+{
+	if (currentProject.directory().isEmpty()) {
+		QMessageBox::warning(
+			this,
+			QStringLiteral("No Project"),
+			QStringLiteral(
+				"Create or open a project before "
+				"creating files."
+			)
+		);
+
+		return;
+	}
+
+	const QString description =
+		headerFile
+			? QStringLiteral("header")
+			: QStringLiteral("source");
+
+	bool accepted = false;
+
+	QString fileName =
+		QInputDialog::getText(
+			this,
+			QStringLiteral("New %1 File")
+				.arg(description),
+			QStringLiteral("File name:"),
+			QLineEdit::Normal,
+			QString(),
+			&accepted
+		);
+
+	if (!accepted) {
+		return;
+	}
+
+	fileName = fileName.trimmed();
+
+	if (fileName.isEmpty()) {
+		return;
+	}
+
+	const QFileInfo fileInfo(fileName);
+
+	if (fileInfo.fileName() != fileName ||
+		fileName == QStringLiteral(".") ||
+		fileName == QStringLiteral("..")) {
+		QMessageBox::warning(
+			this,
+			QStringLiteral("Invalid File Name"),
+			QStringLiteral(
+				"Please enter a file name, not a path."
+			)
+		);
+
+		return;
+	}
+
+	if (!fileName.endsWith(
+			extension,
+			Qt::CaseInsensitive
+		)) {
+		fileName.append(extension);
+	}
+
+	const QDir projectDirectory(
+		currentProject.directory()
+	);
+
+	if (!projectDirectory.mkpath(
+			subdirectory
+		)) {
+		QMessageBox::critical(
+			this,
+			QStringLiteral("Cannot Create Directory"),
+			QStringLiteral(
+				"The project subdirectory could not be created."
+			)
+		);
+
+		return;
+	}
+
+	const QString relativePath =
+		QDir::cleanPath(
+			QDir(subdirectory).filePath(fileName)
+		);
+
+	const QString absolutePath =
+		projectDirectory.filePath(relativePath);
+
+	if (QFile::exists(absolutePath)) {
+		QMessageBox::warning(
+			this,
+			QStringLiteral("File Already Exists"),
+			QStringLiteral(
+				"A file with that name already exists."
+			)
+		);
+
+		return;
+	}
+
+	QFile file(absolutePath);
+
+	if (!file.open(
+			QIODevice::WriteOnly |
+			QIODevice::NewOnly
+		)) {
+		QMessageBox::critical(
+			this,
+			QStringLiteral("Cannot Create File"),
+			file.errorString()
+		);
+
+		return;
+	}
+
+	file.close();
+
+	if (headerFile) {
+		currentProject.addHeaderFile(
+			relativePath
+		);
+	} else {
+		currentProject.addSourceFile(
+			relativePath
+		);
+	}
+
+	updateProjectInterface();
+
+	saveCurrentProject();
+
+	statusBar()->showMessage(
+		QStringLiteral("Created %1")
+			.arg(relativePath)
+	);
+}
+
