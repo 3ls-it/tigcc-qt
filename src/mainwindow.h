@@ -15,10 +15,14 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
 
 private:
+	void
+	createNewProject();
+
 	Project currentProject;
-    ProjectTreeWidget *projectTree;
-    EditorWidget *editor;
-    BuildOutputWidget *buildOutput;
+
+	ProjectTreeWidget *projectTree;
+	EditorWidget *editor;
+	BuildOutputWidget *buildOutput;
 };
 
 #endif // TIGCC_QT_MAINWINDOW_H

@@ -3,6 +3,8 @@
 #include "projecttreewidget.h"
 
 
+
+
 ProjectTreeWidget::ProjectTreeWidget(QWidget *parent)
     : QTreeWidget(parent)
 {
@@ -10,12 +12,25 @@ ProjectTreeWidget::ProjectTreeWidget(QWidget *parent)
 }
 
 
+
 void
 ProjectTreeWidget::setProject(const Project &project)
 {
     clear();
 
-    auto *sourcesItem = new QTreeWidgetItem(this);
+    auto *projectItem = new QTreeWidgetItem(this);
+
+    projectItem->setText(
+        0,
+        project.name().isEmpty()
+            ? QStringLiteral("Untitled")
+            : project.name()
+    );
+
+    auto *sourcesItem = new QTreeWidgetItem(
+        projectItem
+    );
+
     sourcesItem->setText(
         0,
         QStringLiteral("Source Files")
@@ -32,7 +47,10 @@ ProjectTreeWidget::setProject(const Project &project)
         );
     }
 
-    auto *headersItem = new QTreeWidgetItem(this);
+    auto *headersItem = new QTreeWidgetItem(
+        projectItem
+    );
+
     headersItem->setText(
         0,
         QStringLiteral("Header Files")
@@ -49,6 +67,7 @@ ProjectTreeWidget::setProject(const Project &project)
         );
     }
 
+    projectItem->setExpanded(true);
     sourcesItem->setExpanded(true);
     headersItem->setExpanded(true);
 }

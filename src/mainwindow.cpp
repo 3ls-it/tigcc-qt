@@ -1,49 +1,44 @@
-#include "mainwindow.h"
-
-#include "buildoutputwidget.h"
-#include "editorwidget.h"
-#include "projecttreewidget.h"
-
+#include <QDir>
+#include <QFileDialog>
+#include <QInputDialog>
+#include <QLineEdit>
+#include <QMessageBox>
 #include <QMenu>
 #include <QMenuBar>
 #include <QSplitter>
 #include <QStatusBar>
 
+#include "mainwindow.h"
+#include "buildoutputwidget.h"
+#include "editorwidget.h"
+#include "projecttreewidget.h"
+
+
+
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent),
-      currentProject(
-          QStringLiteral("Untitled"),
-          QString()
-      ),
+	  currentProject(
+		  QStringLiteral("Untitled"),
+		  QString()
+	  ),
 	  projectTree(new ProjectTreeWidget(this)),
 	  editor(new EditorWidget(this)),
 	  buildOutput(new BuildOutputWidget(this))
 {
     setWindowTitle(
-        QStringLiteral("TIGCC-Qt")
+		QStringLiteral("TIGCC-Qt")
     );
 
-    resize(1100, 700);
-
-	currentProject.addSourceFile(
-		QStringLiteral("main.c")
-	);
-
-	currentProject.addSourceFile(
-		QStringLiteral("startup.c")
-	);
-
-	currentProject.addHeaderFile(
-		QStringLiteral("project.h")
-	);
+    resize(1200, 675);
 
 	projectTree->setProject(
 		currentProject
 	);
 
     auto *rightSplitter = new QSplitter(
-        Qt::Vertical,
-        this
+		Qt::Vertical,
+		this
     );
 
     rightSplitter->addWidget(editor);
@@ -53,8 +48,8 @@ MainWindow::MainWindow(QWidget *parent)
     rightSplitter->setStretchFactor(1, 1);
 
     auto *mainSplitter = new QSplitter(
-        Qt::Horizontal,
-        this
+		Qt::Horizontal,
+		this
     );
 
     mainSplitter->addWidget(projectTree);
@@ -66,45 +61,142 @@ MainWindow::MainWindow(QWidget *parent)
     setCentralWidget(mainSplitter);
 
     auto *fileMenu = menuBar()->addMenu(
-        QStringLiteral("&File")
+		QStringLiteral("&Project")
     );
 
+
     auto *quitAction = fileMenu->addAction(
-        QStringLiteral("&Quit")
+		QStringLiteral("&Quit")
     );
 
     connect(
-        quitAction,
-        &QAction::triggered,
-        this,
-        &QMainWindow::close
+		quitAction,
+		&QAction::triggered,
+		this,
+		&QMainWindow::close
     );
 
     auto *projectMenu = menuBar()->addMenu(
-        QStringLiteral("&Project")
+		QStringLiteral("&Project")
+    );
+
+	auto *newProjectAction = projectMenu->addAction(
+		QStringLiteral("&New Project")
+	);
+
+	connect(
+		newProjectAction,
+		&QAction::triggered,
+		this,
+		&MainWindow::createNewProject
+	);
+
+    projectMenu->addAction(
+		QStringLiteral("Open Project")
     );
 
     projectMenu->addAction(
-        QStringLiteral("New Project")
-    );
-
-    projectMenu->addAction(
-        QStringLiteral("Open Project")
-    );
-
-    projectMenu->addAction(
-        QStringLiteral("Build Project")
+		QStringLiteral("Build Project")
     );
 
     auto *helpMenu = menuBar()->addMenu(
-        QStringLiteral("&Help")
+		QStringLiteral("&Help")
     );
 
     helpMenu->addAction(
-        QStringLiteral("About TIGCC-Qt")
+		QStringLiteral("About TIGCC-Qt")
     );
 
     statusBar()->showMessage(
-        QStringLiteral("Ready")
+		QStringLiteral("Ready")
     );
+}
+
+
+
+void
+MainWindow::createNewProject()
+{
+	const QString parentDirectory =
+		QFileDialog::getExistingDirectory(
+			this,
+			QStringLiteral("Select Project Location")
+		);
+
+	if (parentDirectory.isEmpty()) {
+		return;
+	}
+
+	bool accepted = false;
+
+	const QString projectName =
+		QInputDialog::getText(
+			this,
+			QStringLiteral("New Project"),
+			QStringLiteral("Project name:"),
+			QLineEdit::Normal,
+			QString(),
+			&accepted
+		);
+
+	if (!accepted) {
+		return;
+	}
+
+	const QString trimmedName =
+		projectName.trimmed();
+
+	if (trimmedName.isEmpty()) {
+		QMessageBox::warning(
+			this,
+			QStringLiteral("Invalid Project Name"),
+			QStringLiteral(
+				"The project name cannot be empty."
+			)
+		);
+
+		return;
+	}
+
+	const QDir parentDirectoryObject(
+		parentDirectory
+	);
+
+	const QString projectDirectory =
+		parentDirectoryObject.filePath(
+			trimmedName
+		);
+
+	QDir directory;
+
+	if (!directory.mkpath(projectDirectory)) {
+		QMessageBox::critical(
+			this,
+			QStringLiteral("Cannot Create Project"),
+			QStringLiteral(
+				"The project directory could not be created."
+			)
+		);
+
+		return;
+	}
+
+	currentProject = Project(
+		trimmedName,
+		projectDirectory
+	);
+
+	projectTree->setProject(
+		currentProject
+	);
+
+	setWindowTitle(
+		QStringLiteral("%1 - TIGCC-Qt")
+			.arg(currentProject.name())
+	);
+
+	statusBar()->showMessage(
+		QStringLiteral("Created project “%1”")
+			.arg(currentProject.name())
+	);
 }
