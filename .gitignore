@@ -21,7 +21,3 @@ qrc_*.cpp
 *.kate-swp
 *.swp
 *~
-
-# Temporary conversion output
-qt3-converted/
-ui-generated/
