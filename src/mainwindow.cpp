@@ -11,15 +11,35 @@
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent),
-      projectTree(new ProjectTreeWidget(this)),
-      editor(new EditorWidget(this)),
-      buildOutput(new BuildOutputWidget(this))
+      currentProject(
+          QStringLiteral("Untitled"),
+          QString()
+      ),
+	  projectTree(new ProjectTreeWidget(this)),
+	  editor(new EditorWidget(this)),
+	  buildOutput(new BuildOutputWidget(this))
 {
     setWindowTitle(
         QStringLiteral("TIGCC-Qt")
     );
 
     resize(1100, 700);
+
+	currentProject.addSourceFile(
+		QStringLiteral("main.c")
+	);
+
+	currentProject.addSourceFile(
+		QStringLiteral("startup.c")
+	);
+
+	currentProject.addHeaderFile(
+		QStringLiteral("project.h")
+	);
+
+	projectTree->setProject(
+		currentProject
+	);
 
     auto *rightSplitter = new QSplitter(
         Qt::Vertical,

@@ -3,6 +3,8 @@
 
 #include <QMainWindow>
 
+#include "project.h"
+
 class BuildOutputWidget;
 class EditorWidget;
 class ProjectTreeWidget;
@@ -13,6 +15,7 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
 
 private:
+	Project currentProject;
     ProjectTreeWidget *projectTree;
     EditorWidget *editor;
     BuildOutputWidget *buildOutput;

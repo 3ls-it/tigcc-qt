@@ -17,6 +17,8 @@ qt_add_executable(tigcc-qt
     src/main.cpp
 	src/mainwindow.cpp
     src/mainwindow.h
+    src/project.cpp
+    src/project.h
 	src/projecttreewidget.cpp
     src/projecttreewidget.h
     src/editorwidget.cpp
