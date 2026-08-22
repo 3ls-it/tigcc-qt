@@ -19,8 +19,14 @@ private:
 	void
 	createNewProject();
 
+    void
+    openProject();	
+
 	void
 	saveCurrentProject();
+
+    void
+    updateProjectInterface();
 	
 	Project currentProject;
 	QString currentProjectFile;

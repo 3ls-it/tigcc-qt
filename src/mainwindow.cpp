@@ -7,6 +7,7 @@
 #include <QMenuBar>
 #include <QSplitter>
 #include <QStatusBar>
+#include <QFileInfo>
 
 #include "mainwindow.h"
 #include "buildoutputwidget.h"
@@ -33,9 +34,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     resize(1440, 810);
 
-	projectTree->setProject(
-		currentProject
-	);
+	updateProjectInterface();
 
     auto *rightSplitter = new QSplitter(
 		Qt::Vertical,
@@ -92,9 +91,16 @@ MainWindow::MainWindow(QWidget *parent)
 		&MainWindow::createNewProject
 	);
 
-    projectMenu->addAction(
-		QStringLiteral("Open Project")
-    );
+	auto *openProjectAction = projectMenu->addAction(
+		QStringLiteral("&Open Project")
+	);
+
+	connect(
+		openProjectAction,
+		&QAction::triggered,
+		this,
+		&MainWindow::openProject
+	);
 
     projectMenu->addAction(
 		QStringLiteral("Build Project")
@@ -221,9 +227,7 @@ MainWindow::createNewProject()
 		return;
 	}
 
-	projectTree->setProject(
-		currentProject
-	);
+	updateProjectInterface();
 
 	setWindowTitle(
 		QStringLiteral("%1 - TIGCC-Qt")
@@ -267,5 +271,76 @@ MainWindow::saveCurrentProject()
 
 	statusBar()->showMessage(
 		QStringLiteral("Project saved")
+	);
+}
+
+
+void
+MainWindow::updateProjectInterface()
+{
+	projectTree->setProject(
+		currentProject
+	);
+
+	if (currentProject.name().isEmpty()) {
+		setWindowTitle(
+			QStringLiteral("TIGCC-Qt")
+		);
+	} else {
+		setWindowTitle(
+			QStringLiteral("%1 - TIGCC-Qt")
+				.arg(currentProject.name())
+		);
+	}
+}
+
+
+void
+MainWindow::openProject()
+{
+	const QString filePath =
+		QFileDialog::getOpenFileName(
+			this,
+			QStringLiteral("Open Project"),
+			QString(),
+			QStringLiteral(
+				"TIGCC-Qt Projects "
+				"(*.tigcc-project);;"
+				"All Files (*)"
+			)
+		);
+
+	if (filePath.isEmpty()) {
+		return;
+	}
+
+	Project loadedProject;
+	ProjectManager projectManager;
+	QString errorMessage;
+
+	if (!projectManager.loadProject(
+			filePath,
+			&loadedProject,
+			&errorMessage
+		)) {
+		QMessageBox::critical(
+			this,
+			QStringLiteral("Cannot Open Project"),
+			errorMessage
+		);
+
+		return;
+	}
+
+	currentProject = loadedProject;
+
+	currentProjectFile =
+		QFileInfo(filePath).absoluteFilePath();
+
+	updateProjectInterface();
+
+	statusBar()->showMessage(
+		QStringLiteral("Opened project \"%1\"")
+			.arg(currentProject.name())
 	);
 }
