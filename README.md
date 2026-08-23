@@ -1,5 +1,5 @@
 <div align="center">
-<h2>KTIGCC-Qt</h2>
+<h2>TIGCC-Qt</h2>
 </div>
 &nbsp;
   
