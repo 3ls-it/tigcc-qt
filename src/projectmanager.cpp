@@ -1,3 +1,14 @@
+/*
+ * @file    src/projectmanagement.cpp
+ * @brief   Provides methods for managing a project.
+ *
+ * This file is part of TIGCC-Qt.
+ *
+ * Copyright (c) 2026 J Adams <jfa63@duck.com>
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
+ */
+
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonArray>

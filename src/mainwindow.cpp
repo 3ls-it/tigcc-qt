@@ -1,3 +1,14 @@
+/*
+ * @file    src/mainwindow.cpp
+ * @brief   Provides the application main window.
+ *
+ * This file is part of TIGCC-Qt.
+ *
+ * Copyright (c) 2026 J Adams <jfa63@duck.com>
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
+ */
+
 #include <QDir>
 #include <QFile>
 #include <QFileDialog>

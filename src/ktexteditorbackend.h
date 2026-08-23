@@ -1,8 +1,18 @@
+/*
+ * @file    src/keditorbackend.h
+ * @brief   Header for keditorbackend.cpp
+ *
+ * This file is part of TIGCC-Qt.
+ *
+ * Copyright (c) 2026 J Adams <jfa63@duck.com>
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
+ */
+
 #ifndef TIGCC_QT_KTEXTEDITORBACKEND_H
 #define TIGCC_QT_KTEXTEDITORBACKEND_H
 
 #include "editorbackend.h"
-
 
 
 

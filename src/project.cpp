@@ -1,4 +1,17 @@
+/*
+ * @file    src/project.cpp
+ * @brief   Encapsulates a TIGCC project.
+ *
+ * This file is part of TIGCC-Qt.
+ *
+ * Copyright (c) 2026 J Adams <jfa63@duck.com>
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
+ */
+
 #include "project.h"
+
+
 
 Project::Project()
 {

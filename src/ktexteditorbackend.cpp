@@ -1,3 +1,15 @@
+/*
+ * @file    src/ktexteditorbackend.cpp
+ * @brief   KTextEditor extends the EditorBackend
+ *          interface.
+ *
+ * This file is part of TIGCC-Qt.
+ *
+ * Copyright (c) 2026 J Adams <jfa63@duck.com>
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
+ */
+
 #include <KTextEditor/Document>
 #include <KTextEditor/Editor>
 #include <KTextEditor/View>
