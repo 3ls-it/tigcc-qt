@@ -8,6 +8,11 @@
 </div>
 &nbsp;
 &nbsp;
-<p align=center>
-A modern, cross-platform Qt-based IDE for the TIGCC toolchain. A successor to KTIGCC.  
+<div align=center>
+<h4>A modern, cross-platform Qt-based IDE for the TIGCC toolchain. A successor to KTIGCC.</h4>
+</div>
+&nbsp;
+&nbsp;
+<p align="center">
+This project is brand new and the current code does not do much yet. Many things are bound to change (possibly a lot!) before we achieve a first usable release.
 </p>
