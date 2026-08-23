@@ -11,25 +11,39 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
+find_package(
+    KF6TextEditor
+    REQUIRED
+)
+
 qt_standard_project_setup()
 
 qt_add_executable(tigcc-qt
     src/main.cpp
-	src/mainwindow.cpp
+    src/mainwindow.cpp
     src/mainwindow.h
+
     src/project.cpp
-	src/projectmanager.cpp
-	src/projectmanager.h
     src/project.h
-	src/projecttreewidget.cpp
+
+    src/projectmanager.cpp
+    src/projectmanager.h
+
+    src/projecttreewidget.cpp
     src/projecttreewidget.h
-    src/editorwidget.cpp
-    src/editorwidget.h
+
     src/buildoutputwidget.cpp
     src/buildoutputwidget.h
+
+    src/editorbackend.cpp
+    src/editorbackend.h
+
+    src/ktexteditorbackend.cpp
+    src/ktexteditorbackend.h
 )
 
 target_link_libraries(tigcc-qt
     PRIVATE
         Qt6::Widgets
+        KF6::TextEditor
 )

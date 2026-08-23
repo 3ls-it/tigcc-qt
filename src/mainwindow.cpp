@@ -12,7 +12,8 @@
 
 #include "mainwindow.h"
 #include "buildoutputwidget.h"
-#include "editorwidget.h"
+#include "editorbackend.h"
+#include "ktexteditorbackend.h"
 #include "projectmanager.h"
 #include "projecttreewidget.h"
 
@@ -26,14 +27,14 @@ MainWindow::MainWindow(QWidget *parent)
 		  QString()
 	  ),
 	  projectTree(new ProjectTreeWidget(this)),
-	  editor(new EditorWidget(this)),
+	  editor(new KTextEditorBackend(this)),
 	  buildOutput(new BuildOutputWidget(this))
 {
     setWindowTitle(
 		QStringLiteral("TIGCC-Qt")
     );
 
-    resize(1440, 810);
+    resize(1440, 1024);
 
 	updateProjectInterface();
 
@@ -42,7 +43,9 @@ MainWindow::MainWindow(QWidget *parent)
 		this
     );
 
-    rightSplitter->addWidget(editor);
+	rightSplitter->addWidget(
+		editor->widget()
+	);
     rightSplitter->addWidget(buildOutput);
 
     rightSplitter->setStretchFactor(0, 3);

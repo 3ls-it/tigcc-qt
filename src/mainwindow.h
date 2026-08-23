@@ -10,7 +10,7 @@
 
 
 class BuildOutputWidget;
-class EditorWidget;
+class EditorBackend;
 class ProjectTreeWidget;
 
 class MainWindow : public QMainWindow
@@ -41,7 +41,7 @@ private:
 	QString currentProjectFile;
 
 	ProjectTreeWidget *projectTree;
-	EditorWidget *editor;
+	EditorBackend *editor;
 	BuildOutputWidget *buildOutput;
 };
 
