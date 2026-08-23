@@ -20,9 +20,22 @@
 
 class ProjectTreeWidget : public QTreeWidget
 {
+	Q_OBJECT
+
 public:
     explicit ProjectTreeWidget(QWidget *parent = nullptr);
 	void setProject(const Project &project);
+
+signals:
+    void fileActivated(
+        const QString &relativePath
+    );
+
+private slots:
+    void handleItemDoubleClicked(
+        QTreeWidgetItem *item,
+        int column
+    );
 };
 
 #endif // TIGCC_QT_PROJECTTREEWIDGET_H

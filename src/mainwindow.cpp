@@ -160,6 +160,13 @@ MainWindow::MainWindow(QWidget *parent)
 		QStringLiteral("&Help")
     );
 
+	connect(
+		projectTree,
+		&ProjectTreeWidget::fileActivated,
+		this,
+		&MainWindow::openProjectFile
+	);
+
     helpMenu->addAction(
 		QStringLiteral("About TIGCC-Qt")
     );
@@ -553,3 +560,40 @@ MainWindow::createProjectFile(
 	);
 }
 
+
+void
+MainWindow::openProjectFile(
+	const QString &relativePath
+)
+{
+	if (currentProject.directory().isEmpty()) {
+		return;
+	}
+
+	const QString absolutePath =
+		QDir(
+			currentProject.directory()
+		).filePath(
+			relativePath
+		);
+
+	QString errorMessage;
+
+	if (!editor->openFile(
+			absolutePath,
+			&errorMessage
+		)) {
+		QMessageBox::critical(
+			this,
+			QStringLiteral("Cannot Open File"),
+			errorMessage
+		);
+
+		return;
+	}
+
+	statusBar()->showMessage(
+		QStringLiteral("Opened %1")
+			.arg(relativePath)
+	);
+}

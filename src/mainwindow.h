@@ -47,6 +47,11 @@ private:
 		const QString &extension,
 		bool headerFile
 	);
+
+	void
+	openProjectFile(
+		const QString &relativePath
+	);
 	
 	Project currentProject;
 	QString currentProjectFile;

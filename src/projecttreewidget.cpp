@@ -19,6 +19,12 @@ ProjectTreeWidget::ProjectTreeWidget(QWidget *parent)
     : QTreeWidget(parent)
 {
     setHeaderLabel(QStringLiteral("Project"));
+	connect(
+		this,
+		&QTreeWidget::itemDoubleClicked,
+		this,
+		&ProjectTreeWidget::handleItemDoubleClicked
+    );
 }
 
 
@@ -54,6 +60,12 @@ ProjectTreeWidget::setProject(const Project &project)
 			0,
 			path
 		);
+
+		fileItem->setData(
+			0,
+			Qt::UserRole,
+			path
+		);
 	}
 
 	auto *headersItem = new QTreeWidgetItem(
@@ -74,9 +86,50 @@ ProjectTreeWidget::setProject(const Project &project)
 			0,
 			path
 		);
+
+		fileItem->setData(
+			0,
+			Qt::UserRole,
+			path
+		);	
 	}
 
 	projectItem->setExpanded(true);
 	sourcesItem->setExpanded(true);
 	headersItem->setExpanded(true);
+}
+
+
+void
+ProjectTreeWidget::handleItemDoubleClicked(
+	QTreeWidgetItem *item,
+	int column
+)
+{
+	Q_UNUSED(column);
+
+	if (item == nullptr) {
+		return;
+	}
+
+	const QVariant fileData =
+		item->data(
+			0,
+			Qt::UserRole
+		);
+
+	if (!fileData.isValid()) {
+		return;
+	}
+
+	const QString relativePath =
+		fileData.toString();
+
+	if (relativePath.isEmpty()) {
+		return;
+	}
+
+	emit fileActivated(
+		relativePath
+	);
 }
