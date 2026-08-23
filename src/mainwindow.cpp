@@ -76,7 +76,7 @@ MainWindow::MainWindow(QWidget *parent)
     setCentralWidget(mainSplitter);
 
     auto *fileMenu = menuBar()->addMenu(
-		QStringLiteral("&Project")
+		QStringLiteral("&File")
     );
 
 
