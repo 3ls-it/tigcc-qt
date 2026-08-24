@@ -53,7 +53,9 @@ public:
 
 private slots:
     void
-    documentModifiedChanged();
+    documentModifiedChanged(
+		KTextEditor::Document *document
+	);
 
 private:
     KTextEditor::Document *m_document;

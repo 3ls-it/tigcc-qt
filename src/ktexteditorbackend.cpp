@@ -42,17 +42,19 @@ KTextEditorBackend::KTextEditorBackend(
 
 	connect(
 		m_document,
-		SIGNAL(modifiedChanged()),
+		&KTextEditor::Document::modifiedChanged,
 		this,
-		SLOT(documentModifiedChanged())
+		&KTextEditorBackend::documentModifiedChanged
 	);
 }
+
 
 QWidget *
 KTextEditorBackend::widget()
 {
 	return m_editorWidget;
 }
+
 
 bool
 KTextEditorBackend::openFile(
@@ -85,6 +87,7 @@ KTextEditorBackend::openFile(
 	return true;
 }
 
+
 bool
 KTextEditorBackend::saveCurrentFile(
 	QString *errorMessage
@@ -108,6 +111,7 @@ KTextEditorBackend::saveCurrentFile(
 	return true;
 }
 
+
 QString
 KTextEditorBackend::currentFilePath() const
 {
@@ -117,6 +121,7 @@ KTextEditorBackend::currentFilePath() const
 
 	return m_document->url().toLocalFile();
 }
+
 
 bool
 KTextEditorBackend::isModified() const
@@ -128,9 +133,14 @@ KTextEditorBackend::isModified() const
 	return m_document->isModified();
 }
 
+
 void
-KTextEditorBackend::documentModifiedChanged()
+KTextEditorBackend::documentModifiedChanged(
+    KTextEditor::Document *document
+)
 {
+	Q_UNUSED(document);
+
 	emit modificationChanged(
 		isModified()
 	);
