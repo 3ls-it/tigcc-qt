@@ -40,6 +40,9 @@ qt_add_executable(tigcc-qt
 
     src/ktexteditorbackend.cpp
     src/ktexteditorbackend.h
+	
+	src/appearance.cpp
+	src/appearance.h
 )
 
 target_link_libraries(tigcc-qt

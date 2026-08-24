@@ -11,8 +11,8 @@
 
 #include <QApplication>
 
+#include "appearance.h"
 #include "mainwindow.h"
-
 
 
 
@@ -20,6 +20,8 @@ int
 main(int argc, char *argv[])
 {
 	QApplication application(argc, argv);
+
+	Appearance::applyDarkTheme();
 
 	application.setApplicationName(
 	QStringLiteral("TIGCC-Qt")
