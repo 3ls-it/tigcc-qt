@@ -12,7 +12,10 @@
 #include <QDir>
 #include <QFile>
 #include <QFileDialog>
+#include <QAction>
 #include <QFileInfo>
+#include <QKeySequence>
+#include <QStringList>
 #include <QInputDialog>
 #include <QLineEdit>
 #include <QMenu>
@@ -39,7 +42,8 @@ MainWindow::MainWindow(QWidget *parent)
 	  ),
 	  projectTree(new ProjectTreeWidget(this)),
 	  editor(new KTextEditorBackend(this)),
-	  buildOutput(new BuildOutputWidget(this))
+	  buildOutput(new BuildOutputWidget(this)),
+	  saveFileAction(nullptr)
 {
     setWindowTitle(
 		QStringLiteral("TIGCC-Qt")
@@ -75,11 +79,32 @@ MainWindow::MainWindow(QWidget *parent)
 
     setCentralWidget(mainSplitter);
 
+	// File menu
     auto *fileMenu = menuBar()->addMenu(
 		QStringLiteral("&File")
     );
 
+	// Save
+	saveFileAction = fileMenu->addAction(
+		QStringLiteral("&Save")
+	);
 
+	saveFileAction->setShortcut(
+		QKeySequence::Save
+	);
+
+	saveFileAction->setEnabled(
+		false
+	);
+
+	connect(
+		saveFileAction,
+		&QAction::triggered,
+		this,
+		&MainWindow::saveCurrentFile
+	);
+
+	// Quit
     auto *quitAction = fileMenu->addAction(
 		QStringLiteral("&Quit")
     );
@@ -91,6 +116,7 @@ MainWindow::MainWindow(QWidget *parent)
 		&QMainWindow::close
     );
 
+	// Project menus
     auto *projectMenu = menuBar()->addMenu(
 		QStringLiteral("&Project")
     );
@@ -134,6 +160,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 	projectMenu->addSeparator();
 
+	// New files
 	auto *newSourceFileAction = projectMenu->addAction(
 		QStringLiteral("New Source File")
 	);
@@ -156,10 +183,6 @@ MainWindow::MainWindow(QWidget *parent)
 		&MainWindow::createHeaderFile
 	);
 
-    auto *helpMenu = menuBar()->addMenu(
-		QStringLiteral("&Help")
-    );
-
 	connect(
 		projectTree,
 		&ProjectTreeWidget::fileActivated,
@@ -167,6 +190,34 @@ MainWindow::MainWindow(QWidget *parent)
 		&MainWindow::openProjectFile
 	);
 
+	connect(
+		editor,
+		&EditorBackend::currentFileChanged,
+		this,
+		[this](const QString &filePath) {
+			Q_UNUSED(filePath);
+
+			updateEditorInterface();
+		}
+	);
+
+	connect(
+		editor,
+		&EditorBackend::modificationChanged,
+		this,
+		[this](bool modified) {
+			Q_UNUSED(modified);
+
+			updateEditorInterface();
+		}
+	);
+
+	// Help menu
+    auto *helpMenu = menuBar()->addMenu(
+		QStringLiteral("&Help")
+    );
+
+	// About
     helpMenu->addAction(
 		QStringLiteral("About TIGCC-Qt")
     );
@@ -552,6 +603,8 @@ MainWindow::createProjectFile(
 
 	updateProjectInterface();
 
+	updateEditorInterface();
+
 	saveCurrentProject();
 
 	statusBar()->showMessage(
@@ -596,4 +649,91 @@ MainWindow::openProjectFile(
 		QStringLiteral("Opened %1")
 			.arg(relativePath)
 	);
+}
+
+
+void
+MainWindow::saveCurrentFile()
+{
+	if (editor->currentFilePath().isEmpty()) {
+		statusBar()->showMessage(
+			QStringLiteral("No file is open")
+		);
+
+		return;
+	}
+
+	QString errorMessage;
+
+	if (!editor->saveCurrentFile(
+			&errorMessage
+		)) {
+		QMessageBox::critical(
+			this,
+			QStringLiteral("Cannot Save File"),
+			errorMessage
+		);
+
+		return;
+	}
+
+	updateEditorInterface();
+
+	statusBar()->showMessage(
+		QStringLiteral("File saved")
+	);
+}
+
+
+void
+MainWindow::updateEditorInterface()
+{
+	QStringList titleParts;
+
+	if (!currentProject.name().isEmpty()) {
+		titleParts.append(
+			currentProject.name()
+		);
+	}
+
+	const QString filePath =
+		editor->currentFilePath();
+
+	if (!filePath.isEmpty()) {
+		titleParts.append(
+			QFileInfo(filePath).fileName()
+		);
+	}
+
+	if (titleParts.isEmpty()) {
+		titleParts.append(
+			QStringLiteral("TIGCC-Qt")
+		);
+	} else {
+		titleParts.append(
+			QStringLiteral("TIGCC-Qt")
+		);
+	}
+
+	QString windowTitle =
+		titleParts.join(
+			QStringLiteral(" — ")
+		);
+
+	if (editor->isModified()) {
+		windowTitle.append(
+			QStringLiteral(" *")
+		);
+	}
+
+	setWindowTitle(
+		windowTitle
+	);
+
+	if (saveFileAction != nullptr) {
+		saveFileAction->setEnabled(
+			!filePath.isEmpty() &&
+			editor->isModified()
+		);
+	}
 }

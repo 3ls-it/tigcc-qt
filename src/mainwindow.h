@@ -20,6 +20,7 @@
 
 
 
+class QAction;
 class BuildOutputWidget;
 class EditorBackend;
 class ProjectTreeWidget;
@@ -53,12 +54,23 @@ private:
 		const QString &relativePath
 	);
 	
+	void
+	saveCurrentFile();
+
+	void
+	updateEditorInterface();
+
 	Project currentProject;
+
 	QString currentProjectFile;
 
 	ProjectTreeWidget *projectTree;
+
 	EditorBackend *editor;
+
 	BuildOutputWidget *buildOutput;
+
+	QAction *saveFileAction;
 };
 
 #endif // TIGCC_QT_MAINWINDOW_H
