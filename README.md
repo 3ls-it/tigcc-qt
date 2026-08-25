@@ -19,5 +19,5 @@ This project is brand new and the current code does not do much yet. Many things
 &nbsp;
 &nbsp;
 <div>
-  <img src="https://github.com/3ls-it/tigcc-qt/blob/main/tigcc-qt_alpha-1.png" alt="TUGCC-Qt screenshot">
+  <img src="https://github.com/3ls-it/tigcc-qt/blob/main/tigcc-qt_alpha-2.png" alt="TUGCC-Qt screenshot">
 </div>
