@@ -30,6 +30,13 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = nullptr);
 
+	enum class FType
+	{
+		FHEAD = 0,
+		FSRC = 1,
+		FGAS = 2
+	};
+
 private:
 	void createNewProject();
 
@@ -39,14 +46,16 @@ private:
 
     void updateProjectInterface();
 
+	void createHeaderFile();
+
 	void createSourceFile();
 
-	void createHeaderFile();
+	void createGasFile();
 
 	void createProjectFile(
 		const QString &subdirectory,
 		const QString &extension,
-		bool headerFile
+		FType ftype
 	);
 
 	void

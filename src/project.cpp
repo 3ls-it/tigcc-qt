@@ -51,18 +51,41 @@ Project::setDirectory(const QString &directory)
 }
 
 QStringList
+Project::headerFiles() const
+{
+    return m_headerFiles;
+}
+
+QStringList
 Project::sourceFiles() const
 {
     return m_sourceFiles;
 }
 
 QStringList
-Project::headerFiles() const
+Project::gasFiles() const
 {
-    return m_headerFiles;
+    return m_gasFiles;
+}
+
+
+// Header files add/remove
+void
+Project::addHeaderFile(const QString &path)
+{
+    if (!path.isEmpty() && !m_headerFiles.contains(path)) {
+        m_headerFiles.append(path);
+    }
 }
 
 void
+Project::removeHeaderFile(const QString &path)
+{
+    m_headerFiles.removeAll(path);
+}
+void
+
+// Source files add/remove
 Project::addSourceFile(const QString &path)
 {
     if (!path.isEmpty() && !m_sourceFiles.contains(path)) {
@@ -76,16 +99,17 @@ Project::removeSourceFile(const QString &path)
     m_sourceFiles.removeAll(path);
 }
 
+// GAS files add/remove
 void
-Project::addHeaderFile(const QString &path)
+Project::addGasFile(const QString &path)
 {
-    if (!path.isEmpty() && !m_headerFiles.contains(path)) {
-        m_headerFiles.append(path);
+    if (!path.isEmpty() && !m_gasFiles.contains(path)) {
+        m_gasFiles.append(path);
     }
 }
 
 void
-Project::removeHeaderFile(const QString &path)
+Project::removeGasFile(const QString &path)
 {
-    m_headerFiles.removeAll(path);
+    m_gasFiles.removeAll(path);
 }

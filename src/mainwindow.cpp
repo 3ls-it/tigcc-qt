@@ -49,7 +49,7 @@ MainWindow::MainWindow(QWidget *parent)
 		QStringLiteral("TIGCC-Qt")
     );
 
-    resize(1440, 1024);
+    resize(1200, 742);
 
 	updateProjectInterface();
 
@@ -63,8 +63,12 @@ MainWindow::MainWindow(QWidget *parent)
 	);
     rightSplitter->addWidget(buildOutput);
 
-    rightSplitter->setStretchFactor(0, 3);
+    rightSplitter->setStretchFactor(0, 4);
     rightSplitter->setStretchFactor(1, 1);
+	rightSplitter->setSizes({557, 185});
+
+	editor->widget()->setMinimumHeight(160);
+	buildOutput->setMinimumHeight(80);
 
     auto *mainSplitter = new QSplitter(
 		Qt::Horizontal,
@@ -160,18 +164,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 	projectMenu->addSeparator();
 
-	// New files
-	auto *newSourceFileAction = projectMenu->addAction(
-		QStringLiteral("New Source File")
-	);
-
-	connect(
-		newSourceFileAction,
-		&QAction::triggered,
-		this,
-		&MainWindow::createSourceFile
-	);
-
+	// New header files
 	auto *newHeaderFileAction = projectMenu->addAction(
 		QStringLiteral("New Header File")
 	);
@@ -181,7 +174,31 @@ MainWindow::MainWindow(QWidget *parent)
 		&QAction::triggered,
 		this,
 		&MainWindow::createHeaderFile
+	);//End
+
+	// New source files
+	auto *newSourceFileAction = projectMenu->addAction(
+		QStringLiteral("New Source File")
 	);
+
+	connect(
+		newSourceFileAction,
+		&QAction::triggered,
+		this,
+		&MainWindow::createSourceFile
+	);//End
+
+	// New GAS files
+	auto *newGasFileAction = projectMenu->addAction(
+		QStringLiteral("New GNU Assembly File")
+	);
+
+	connect(
+		newGasFileAction,
+		&QAction::triggered,
+		this,
+		&MainWindow::createGasFile
+	);//End
 
 	connect(
 		projectTree,
@@ -444,23 +461,32 @@ MainWindow::openProject()
 
 
 void
-MainWindow::createSourceFile()
-{
-	createProjectFile(
-		QStringLiteral("src"),
-		QStringLiteral(".c"),
-		false
-	);
-}
-
-
-void
 MainWindow::createHeaderFile()
 {
 	createProjectFile(
 		QStringLiteral("include"),
 		QStringLiteral(".h"),
-		true
+		MainWindow::FType::FHEAD
+	);
+}
+
+void
+MainWindow::createSourceFile()
+{
+	createProjectFile(
+		QStringLiteral("src"),
+		QStringLiteral(".c"),
+		MainWindow::FType::FSRC
+	);
+}
+
+void
+MainWindow::createGasFile()
+{
+	createProjectFile(
+		QStringLiteral("gasm"),
+		QStringLiteral(".asm"),
+		MainWindow::FType::FGAS
 	);
 }
 
@@ -469,7 +495,7 @@ void
 MainWindow::createProjectFile(
 	const QString &subdirectory,
 	const QString &extension,
-	bool headerFile
+	MainWindow::FType ftype
 )
 {
 	if (currentProject.directory().isEmpty()) {
@@ -485,10 +511,18 @@ MainWindow::createProjectFile(
 		return;
 	}
 
-	const QString description =
-		headerFile
-			? QStringLiteral("header")
-			: QStringLiteral("source");
+	QString description;
+	switch (ftype) {
+		case MainWindow::FType::FHEAD:
+			description = QStringLiteral("header");
+			break;
+		case MainWindow::FType::FSRC:
+			description = QStringLiteral("source");
+			break;
+		case MainWindow::FType::FGAS:
+			description = QStringLiteral("gas");
+			break;
+	}
 
 	bool accepted = false;
 
@@ -591,15 +625,23 @@ MainWindow::createProjectFile(
 
 	file.close();
 
-	if (headerFile) {
-		currentProject.addHeaderFile(
-			relativePath
-		);
-	} else {
-		currentProject.addSourceFile(
-			relativePath
-		);
-	}
+	switch (ftype) {
+		case MainWindow::FType::FHEAD:
+			currentProject.addHeaderFile(
+				relativePath
+			);
+			break;
+		case MainWindow::FType::FSRC:
+			currentProject.addSourceFile(
+				relativePath
+			);
+			break;
+		case MainWindow::FType::FGAS:
+			currentProject.addGasFile(
+				relativePath
+			);
+			break;
+    }
 
 	updateProjectInterface();
 

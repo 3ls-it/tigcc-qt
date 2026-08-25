@@ -33,6 +33,7 @@ ProjectTreeWidget::setProject(const Project &project)
 {
 	clear();
 
+	// Root of tree
 	auto *projectItem = new QTreeWidgetItem(this);
 
 	projectItem->setText(
@@ -42,32 +43,7 @@ ProjectTreeWidget::setProject(const Project &project)
 			: project.name()
 	);
 
-	auto *sourcesItem = new QTreeWidgetItem(
-		projectItem
-	);
-
-	sourcesItem->setText(
-		0,
-		QStringLiteral("Source Files")
-	);
-
-	for (const QString &path : project.sourceFiles()) {
-		auto *fileItem = new QTreeWidgetItem(
-			sourcesItem
-		);
-
-		fileItem->setText(
-			0,
-			path
-		);
-
-		fileItem->setData(
-			0,
-			Qt::UserRole,
-			path
-		);
-	}
-
+	// Header files branch
 	auto *headersItem = new QTreeWidgetItem(
 		projectItem
 	);
@@ -94,9 +70,64 @@ ProjectTreeWidget::setProject(const Project &project)
 		);	
 	}
 
+	// Source files branch
+	auto *sourcesItem = new QTreeWidgetItem(
+		projectItem
+	);
+
+	sourcesItem->setText(
+		0,
+		QStringLiteral("Source Files")
+	);
+
+	for (const QString &path : project.sourceFiles()) {
+		auto *fileItem = new QTreeWidgetItem(
+			sourcesItem
+		);
+
+		fileItem->setText(
+			0,
+			path
+		);
+
+		fileItem->setData(
+			0,
+			Qt::UserRole,
+			path
+		);
+	}
+
+	// GNU Assembly files branch
+	auto *gasItem = new QTreeWidgetItem(
+		projectItem
+	);
+
+	gasItem->setText(
+		0,
+		QStringLiteral("GNU Assembly Files")
+	);
+
+	for (const QString &path : project.gasFiles()) {
+		auto *fileItem = new QTreeWidgetItem(
+			gasItem
+		);
+
+		fileItem->setText(
+			0,
+			path
+		);
+
+		fileItem->setData(
+			0,
+			Qt::UserRole,
+			path
+		);
+	}
+
 	projectItem->setExpanded(true);
-	sourcesItem->setExpanded(true);
 	headersItem->setExpanded(true);
+	sourcesItem->setExpanded(true);
+	gasItem->setExpanded(true);
 }
 
 

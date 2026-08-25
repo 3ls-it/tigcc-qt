@@ -12,55 +12,110 @@
 #ifndef TIGCC_QT_KTEXTEDITORBACKEND_H
 #define TIGCC_QT_KTEXTEDITORBACKEND_H
 
+#include <QList>
+
 #include "editorbackend.h"
 
 
 
+class QLabel;
+class QTabWidget;
+class QWidget;
+
 namespace KTextEditor
 {
-    class Document;
-    class View;
+	class Document;
+	class View;
 }
+
 
 class KTextEditorBackend : public EditorBackend
 {
-    Q_OBJECT
+	Q_OBJECT
 
 public:
-    explicit KTextEditorBackend(
-        QWidget *parent = nullptr
-    );
+	explicit KTextEditorBackend(
+		QWidget *parent = nullptr
+	);
 
-    QWidget *
-    widget() override;
+	QWidget *
+	widget() override;
 
-    bool
-    openFile(
-        const QString &filePath,
-        QString *errorMessage = nullptr
-    ) override;
+	bool
+	openFile(
+		const QString &filePath,
+		QString *errorMessage = nullptr
+	) override;
 
-    bool
-    saveCurrentFile(
-        QString *errorMessage = nullptr
-    ) override;
+	bool
+	saveCurrentFile(
+		QString *errorMessage = nullptr
+	) override;
 
-    QString
-    currentFilePath() const override;
+	bool
+	closeCurrentFile(
+		QString *errorMessage = nullptr
+	) override;
 
-    bool
-    isModified() const override;
+	bool
+	closeAllFiles(
+		QString *errorMessage = nullptr
+	) override;
+
+	QString
+	currentFilePath() const override;
+
+	bool
+	isModified() const override;
 
 private slots:
-    void
-    documentModifiedChanged(
+	void
+	handleCurrentTabChanged(
+		int index
+	);
+
+	void
+	handleTabCloseRequested(
+		int index
+	);
+
+	void
+	documentModifiedChanged(
 		KTextEditor::Document *document
 	);
 
 private:
-    KTextEditor::Document *m_document;
-    KTextEditor::View *m_view;
-    QWidget *m_editorWidget;
-};
+	struct DocumentEntry
+	{
+		KTextEditor::Document *document;
+		KTextEditor::View *view;
+		QWidget *widget;
+		QString filePath;
+		int tabIndex;
+	};
 
+	DocumentEntry *
+	currentDocumentEntry() const;
+
+	DocumentEntry *
+	documentEntryForPath(
+		const QString &filePath
+	) const;
+
+	QLabel *
+	createEmptyStateWidget();
+
+	void
+	showEmptyState();
+
+	void
+	hideEmptyState();
+
+	void
+	emitCurrentDocumentState();
+
+	QLabel *m_emptyState;
+	QTabWidget *m_tabs;
+	QList<DocumentEntry *> m_documents;
+};
 #endif // TIGCC_QT_KTEXTEDITORBACKEND_H

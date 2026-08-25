@@ -39,6 +39,19 @@ ProjectManager::saveProject(
 		project.name()
 	);
 
+	// Header files entry
+	QJsonArray headerFiles;
+
+	for (const QString &path : project.headerFiles()) {
+		headerFiles.append(path);
+	}
+
+	projectObject.insert(
+		QStringLiteral("headerFiles"),
+		headerFiles
+	);
+
+	// Source files entry
 	QJsonArray sourceFiles;
 
 	for (const QString &path : project.sourceFiles()) {
@@ -50,15 +63,16 @@ ProjectManager::saveProject(
 		sourceFiles
 	);
 
-	QJsonArray headerFiles;
+	// GAS files entry
+	QJsonArray gasFiles;
 
-	for (const QString &path : project.headerFiles()) {
-		headerFiles.append(path);
+	for (const QString &path : project.gasFiles()) {
+		gasFiles.append(path);
 	}
 
 	projectObject.insert(
-		QStringLiteral("headerFiles"),
-		headerFiles
+		QStringLiteral("gasFiles"),
+		gasFiles
 	);
 
 	QFile file(filePath);
@@ -144,6 +158,19 @@ ProjectManager::loadProject(
 		projectFileInfo.absolutePath()
 	);
 
+	// Load header files
+	const QJsonArray headerFiles =
+		projectObject.value(
+			QStringLiteral("headerFiles")
+		).toArray();
+
+	for (const QJsonValue &value : headerFiles) {
+		loadedProject.addHeaderFile(
+			value.toString()
+		);
+	}
+
+	// Load source files
 	const QJsonArray sourceFiles =
 		projectObject.value(
 			QStringLiteral("sourceFiles")
@@ -155,13 +182,14 @@ ProjectManager::loadProject(
 		);
 	}
 
-	const QJsonArray headerFiles =
+	// Load GAS files
+	const QJsonArray gasFiles =
 		projectObject.value(
-			QStringLiteral("headerFiles")
+			QStringLiteral("gasFiles")
 		).toArray();
 
-	for (const QJsonValue &value : headerFiles) {
-		loadedProject.addHeaderFile(
+	for (const QJsonValue &value : gasFiles) {
+		loadedProject.addGasFile(
 			value.toString()
 		);
 	}

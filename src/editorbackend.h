@@ -45,6 +45,16 @@ public:
         QString *errorMessage = nullptr
     ) = 0;
 
+	virtual bool
+    closeCurrentFile(
+        QString *errorMessage = nullptr
+    ) = 0;
+
+	virtual bool
+    closeAllFiles(
+        QString *errorMessage = nullptr
+    ) = 0;
+
     virtual QString
     currentFilePath() const = 0;
 
