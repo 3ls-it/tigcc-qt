@@ -106,6 +106,11 @@ private:
 	createEmptyStateWidget();
 
 	void
+	configureView(
+		KTextEditor::View *view
+	);
+
+	void
 	showEmptyState();
 
 	void

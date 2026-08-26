@@ -15,10 +15,18 @@
 #include <KTextEditor/View>
 
 #include <QFileInfo>
+#include <QStringList>
 #include <QTabWidget>
 #include <QUrl>
 #include <QLabel>
 #include <QMenu>
+
+/* DEBUG
+#include <QDebug>
+#include <QScrollBar>
+#include <QTimer>
+#include <QAbstractScrollArea>
+ */
 
 #include "ktexteditorbackend.h"
 
@@ -196,19 +204,20 @@ KTextEditorBackend::openFile(
 		return false;
 	}
 
-	QMenu *contextMenu =
-		view->defaultContextMenu();
+	configureView(
+		view
+	);
 
-	if (contextMenu != nullptr) {
-		view->setContextMenu(
-			contextMenu
-		);
-	}
-
+	//QWidget *editorWidget =
+	//	view->editorWidget();
 	QWidget *editorWidget =
 		view->editorWidget();
 
-	if (editorWidget == nullptr) {
+	QWidget *viewWidget =
+		editorWidget->parentWidget();
+
+	if (editorWidget == nullptr ||
+			viewWidget == nullptr) {
 		document->deleteLater();
 
 		if (errorMessage != nullptr) {
@@ -231,7 +240,7 @@ KTextEditorBackend::openFile(
 
 	const int tabIndex =
 		m_tabs->addTab(
-			editorWidget,
+			viewWidget,
 			tabLabel
 		);
 
@@ -239,7 +248,7 @@ KTextEditorBackend::openFile(
 		new DocumentEntry{
 			document,
 			view,
-			editorWidget,
+			viewWidget,
 			normalizedPath,
 			tabIndex
 		};
@@ -608,3 +617,55 @@ KTextEditorBackend::createEmptyStateWidget()
 
 	return emptyState;
 }
+
+
+void
+KTextEditorBackend::configureView(
+    KTextEditor::View *view
+)
+{
+	if (view == nullptr) {
+		return;
+	}
+
+	QMenu *contextMenu =
+		view->defaultContextMenu();
+
+	if (contextMenu != nullptr) {
+		view->setContextMenu(
+			contextMenu
+		);
+	}
+
+	const QStringList configKeys =
+		view->configKeys();
+
+	const QString minimapKey =
+		QStringLiteral(
+			"scrollbar-minimap"
+		);
+
+	const QString previewKey =
+		QStringLiteral(
+			"scrollbar-preview"
+		);
+
+	if (configKeys.contains(
+			minimapKey
+		)) {
+		view->setConfigValue(
+			minimapKey,
+			true
+		);
+	}
+
+	if (configKeys.contains(
+			previewKey
+		)) {
+		view->setConfigValue(
+			previewKey,
+			true
+		);
+	}
+}
+
