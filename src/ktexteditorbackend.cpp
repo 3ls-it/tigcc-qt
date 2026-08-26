@@ -18,6 +18,7 @@
 #include <QTabWidget>
 #include <QUrl>
 #include <QLabel>
+#include <QMenu>
 
 #include "ktexteditorbackend.h"
 
@@ -193,6 +194,15 @@ KTextEditorBackend::openFile(
 		}
 
 		return false;
+	}
+
+	QMenu *contextMenu =
+		view->defaultContextMenu();
+
+	if (contextMenu != nullptr) {
+		view->setContextMenu(
+			contextMenu
+		);
 	}
 
 	QWidget *editorWidget =
