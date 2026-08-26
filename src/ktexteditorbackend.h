@@ -53,6 +53,14 @@ public:
 	) override;
 
 	bool
+	hasModifiedFiles() const override;
+
+	bool
+	saveAllFiles(
+		QString *errorMessage = nullptr
+	) override;
+
+	bool
 	closeCurrentFile(
 		QString *errorMessage = nullptr
 	) override;

@@ -24,6 +24,7 @@ class QAction;
 class BuildOutputWidget;
 class EditorBackend;
 class ProjectTreeWidget;
+class QCloseEvent;
 
 class MainWindow : public QMainWindow
 {
@@ -37,12 +38,21 @@ public:
 		FGAS = 2
 	};
 
+
+protected:
+	void
+	closeEvent(
+		QCloseEvent *event
+	) override;
+
 private:
 	void createNewProject();
 
     void openProject();	
 
 	void saveCurrentProject();
+
+	bool confirmClose();
 
     void updateProjectInterface();
 

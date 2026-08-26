@@ -25,57 +25,65 @@ class EditorBackend : public QObject
     Q_OBJECT
 
 public:
-    explicit EditorBackend(
-        QObject *parent = nullptr
-    );
+	explicit EditorBackend(
+		QObject *parent = nullptr
+	);
 
-    ~EditorBackend() override = default;
+	~EditorBackend() override = default;
 
-    virtual QWidget *
-    widget() = 0;
-
-    virtual bool
-    openFile(
-        const QString &filePath,
-        QString *errorMessage = nullptr
-    ) = 0;
-
-    virtual bool
-    saveCurrentFile(
-        QString *errorMessage = nullptr
-    ) = 0;
+	virtual QWidget *
+	widget() = 0;
 
 	virtual bool
-    closeCurrentFile(
-        QString *errorMessage = nullptr
-    ) = 0;
+	openFile(
+		const QString &filePath,
+		QString *errorMessage = nullptr
+	) = 0;
 
 	virtual bool
-    closeAllFiles(
-        QString *errorMessage = nullptr
-    ) = 0;
+	saveCurrentFile(
+		QString *errorMessage = nullptr
+	) = 0;
 
-    virtual QString
-    currentFilePath() const = 0;
+	virtual bool
+	hasModifiedFiles() const = 0;
 
-    virtual bool
-    isModified() const = 0;
+	virtual bool
+	saveAllFiles(
+		QString *errorMessage = nullptr
+	) = 0;
+
+	virtual bool
+	closeCurrentFile(
+		QString *errorMessage = nullptr
+	) = 0;
+
+	virtual bool
+	closeAllFiles(
+		QString *errorMessage = nullptr
+	) = 0;
+
+	virtual QString
+	currentFilePath() const = 0;
+
+	virtual bool
+	isModified() const = 0;
 
 signals:
-    void
-    currentFileChanged(
-        const QString &filePath
-    );
+	void
+	currentFileChanged(
+		const QString &filePath
+	);
 
-    void
-    modificationChanged(
-        bool modified
-    );
+	void
+	modificationChanged(
+		bool modified
+	);
 
-    void
-    editorError(
-        const QString &message
-    );
+	void
+	editorError(
+		const QString &message
+	);
 };
 
 #endif // TIGCC_QT_EDITORBACKEND_H

@@ -310,6 +310,49 @@ KTextEditorBackend::saveCurrentFile(
 }
 
 
+bool
+KTextEditorBackend::hasModifiedFiles() const
+{
+	for (DocumentEntry *entry : m_documents) {
+		if (entry->document->isModified()) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+
+bool
+KTextEditorBackend::saveAllFiles(
+	QString *errorMessage
+)
+{
+	for (DocumentEntry *entry : m_documents) {
+		if (!entry->document->isModified()) {
+			continue;
+		}
+
+		if (!entry->document->documentSave()) {
+			if (errorMessage != nullptr) {
+				*errorMessage =
+					QStringLiteral(
+						"The editor could not save:\n%1"
+					).arg(
+						entry->filePath
+					);
+			}
+
+			return false;
+		}
+	}
+
+	emitCurrentDocumentState();
+
+	return true;
+}
+
+
 QString
 KTextEditorBackend::currentFilePath() const
 {

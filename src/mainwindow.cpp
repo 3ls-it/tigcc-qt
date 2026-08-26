@@ -23,6 +23,7 @@
 #include <QMessageBox>
 #include <QSplitter>
 #include <QStatusBar>
+#include <QCloseEvent>
 
 #include "mainwindow.h"
 #include "buildoutputwidget.h"
@@ -35,7 +36,7 @@
 
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent),
+	: QMainWindow(parent),
 	  currentProject(
 		  QStringLiteral("Untitled"),
 		  QString()
@@ -777,5 +778,83 @@ MainWindow::updateEditorInterface()
 			!filePath.isEmpty() &&
 			editor->isModified()
 		);
+	}
+} // End updateEditorInterface
+
+
+bool
+MainWindow::confirmClose()
+{
+	if (!editor->hasModifiedFiles()) {
+		return true;
+	}
+
+	QMessageBox messageBox(
+		QMessageBox::Warning,
+		QStringLiteral("Unsaved Changes"),
+		QStringLiteral(
+			"One or more files have unsaved changes.\n"
+			"Do you want to save them before quitting?"
+		),
+		QMessageBox::Save |
+		QMessageBox::Discard |
+		QMessageBox::Cancel,
+		this
+	);
+
+	messageBox.setDefaultButton(
+		QMessageBox::Save
+	);
+
+	messageBox.setEscapeButton(
+		QMessageBox::Cancel
+	);
+
+	const QMessageBox::StandardButton result =
+		static_cast<QMessageBox::StandardButton>(
+			messageBox.exec()
+		);
+
+	switch (result) {
+		case QMessageBox::Save:
+		{
+			QString errorMessage;
+
+			if (!editor->saveAllFiles(
+					&errorMessage
+				)) {
+				QMessageBox::critical(
+					this,
+					QStringLiteral(
+						"Cannot Save Files"
+					),
+					errorMessage
+				);
+
+				return false;
+			}
+
+			return true;
+		}
+
+		case QMessageBox::Discard:
+			return true;
+
+		case QMessageBox::Cancel:
+		default:
+			return false;
+	}
+} // End confirmClose()
+
+
+void
+MainWindow::closeEvent(
+	QCloseEvent *event
+)
+{
+	if (confirmClose()) {
+		event->accept();
+	} else {
+		event->ignore();
 	}
 }
