@@ -60,12 +60,6 @@ KTextEditorBackend::KTextEditorBackend(
 		160
 	);
 
-	m_tabs->addTab(
-		m_emptyState,
-		QStringLiteral("Welcome")
-	);
-
-
 	connect(
 		m_tabs,
 		&QTabWidget::currentChanged,
