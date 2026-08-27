@@ -50,7 +50,7 @@ MainWindow::MainWindow(QWidget *parent)
 		QStringLiteral("TIGCC-Qt")
     );
 
-    resize(1200, 742);
+    resize(1200, 829);
 
 	updateProjectInterface();
 
@@ -66,7 +66,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     rightSplitter->setStretchFactor(0, 4);
     rightSplitter->setStretchFactor(1, 1);
-	rightSplitter->setSizes({557, 185});
+	rightSplitter->setSizes({644, 185});
 
 	editor->widget()->setMinimumHeight(160);
 	buildOutput->setMinimumHeight(80);
