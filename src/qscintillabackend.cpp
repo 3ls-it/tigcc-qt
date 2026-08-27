@@ -10,6 +10,11 @@
  */
 
 #include <Qsci/qsciscintilla.h>
+
+#include <QFile>
+#include <QFileInfo>
+#include <QIODevice>
+#include <QSignalBlocker>
 #include <QTabWidget>
 
 #include "qscintillabackend.h"
@@ -43,7 +48,19 @@ QScintillaBackend::QScintillaBackend(
 		m_editor,
 		QStringLiteral("QScintilla")
 	);
+
+	connect(
+		m_editor,
+		&QsciScintilla::textChanged,
+		this,
+		[this]() {
+			emit modificationChanged(
+				m_editor->isModified()
+			);
+		}
+	);
 }
+
 
 QWidget *
 QScintillaBackend::widget()
@@ -51,24 +68,87 @@ QScintillaBackend::widget()
 	return m_tabs;
 }
 
+
 bool
 QScintillaBackend::openFile(
 	const QString &filePath,
 	QString *errorMessage
 )
 {
-	Q_UNUSED(filePath);
+	const QFileInfo fileInfo(
+		filePath
+	);
 
-	if (errorMessage != nullptr) {
-		*errorMessage =
-			QStringLiteral(
-				"QScintilla file loading is not "
-				"implemented yet."
-			);
+	if (!fileInfo.exists() ||
+		!fileInfo.isFile()) {
+		if (errorMessage != nullptr) {
+			*errorMessage =
+				QStringLiteral(
+					"The file does not exist:\n%1"
+				).arg(
+					filePath
+				);
+		}
+
+		return false;
 	}
 
-	return false;
-}
+	QFile file(
+		fileInfo.absoluteFilePath()
+	);
+
+	if (!file.open(
+			QIODevice::ReadOnly
+		)) {
+		if (errorMessage != nullptr) {
+			*errorMessage =
+				file.errorString();
+		}
+
+		return false;
+	}
+
+	const QByteArray fileData =
+		file.readAll();
+
+	file.close();
+
+	const QString fileText =
+		QString::fromUtf8(
+			fileData
+		);
+
+	/*
+	 * Prevent the intermediate setText() operation
+	 * from producing a spurious application-level
+	 * modification notification.
+	 */
+	const QSignalBlocker signalBlocker(
+		m_editor
+	);
+
+	m_editor->setText(
+		fileText
+	);
+
+	m_editor->setModified(
+		false
+	);
+
+	m_filePath =
+		fileInfo.absoluteFilePath();
+
+	emit currentFileChanged(
+		m_filePath
+	);
+
+	emit modificationChanged(
+		false
+	);
+
+	return true;
+} // End openFile
+
 
 bool
 QScintillaBackend::saveCurrentFile(
@@ -86,11 +166,13 @@ QScintillaBackend::saveCurrentFile(
 	return false;
 }
 
+
 bool
 QScintillaBackend::hasModifiedFiles() const
 {
-	return false;
+	return m_editor->isModified();
 }
+
 
 bool
 QScintillaBackend::saveAllFiles(
@@ -102,6 +184,7 @@ QScintillaBackend::saveAllFiles(
 	return true;
 }
 
+
 bool
 QScintillaBackend::discardAllChanges(
 	QString *errorMessage
@@ -111,6 +194,7 @@ QScintillaBackend::discardAllChanges(
 
 	return true;
 }
+
 
 bool
 QScintillaBackend::closeCurrentFile(
@@ -122,6 +206,7 @@ QScintillaBackend::closeCurrentFile(
 	return true;
 }
 
+
 bool
 QScintillaBackend::closeAllFiles(
 	QString *errorMessage
@@ -132,14 +217,16 @@ QScintillaBackend::closeAllFiles(
 	return true;
 }
 
+
 QString
 QScintillaBackend::currentFilePath() const
 {
-	return QString();
+	return m_filePath;
 }
+
 
 bool
 QScintillaBackend::isModified() const
 {
-	return false;
+	return m_editor->isModified();
 }

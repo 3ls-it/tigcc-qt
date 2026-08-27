@@ -74,6 +74,7 @@ public:
 private:
 	QTabWidget *m_tabs;
 	QsciScintilla *m_editor;
+	QString m_filePath;
 };
 
 #endif // TIGCC_QT_QSCINTILLABACKEND_H
