@@ -158,6 +158,7 @@ ProjectManager::loadProject(
 		projectFileInfo.absolutePath()
 	);
 
+	// Here we load project file types into tree
 	// Load header files
 	const QJsonArray headerFiles =
 		projectObject.value(

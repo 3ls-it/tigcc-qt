@@ -31,13 +31,13 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = nullptr);
 
+	// Project file types
 	enum class FType
 	{
 		FHEAD = 0,
 		FSRC = 1,
 		FGAS = 2
 	};
-
 
 protected:
 	void

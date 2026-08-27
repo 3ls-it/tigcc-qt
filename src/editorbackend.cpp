@@ -14,8 +14,8 @@
 
 
 EditorBackend::EditorBackend(
-    QObject *parent
+	QObject *parent
 )
-    : QObject(parent)
+	: QObject(parent)
 {
 }

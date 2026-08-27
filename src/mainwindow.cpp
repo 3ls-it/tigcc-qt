@@ -243,8 +243,8 @@ MainWindow::MainWindow(QWidget *parent)
     statusBar()->showMessage(
 		QStringLiteral("Ready")
     );
-}
-
+} // End constructor
+ 
 
 
 void
@@ -363,7 +363,7 @@ MainWindow::createNewProject()
 		QStringLiteral("Created project “%1”")
 			.arg(currentProject.name())
 	);
-}
+} // End createNewProject
 
 
 void
@@ -672,7 +672,7 @@ MainWindow::createProjectFile(
 		QStringLiteral("Created %1")
 			.arg(relativePath)
 	);
-}
+} // End createProjectFile
 
 
 void
@@ -710,7 +710,7 @@ MainWindow::openProjectFile(
 		QStringLiteral("Opened %1")
 			.arg(relativePath)
 	);
-}
+} // End openProjectFile
 
 
 void
@@ -743,7 +743,7 @@ MainWindow::saveCurrentFile()
 	statusBar()->showMessage(
 		QStringLiteral("File saved")
 	);
-}
+} // End saveCurrentFile
 
 
 void
@@ -911,7 +911,7 @@ MainWindow::prepareForProjectChange()
 	}
 
 	return true;
-}
+} // End prepareForProjectChange
 
 
 void

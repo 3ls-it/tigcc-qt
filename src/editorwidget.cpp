@@ -14,9 +14,9 @@
 
 
 EditorWidget::EditorWidget(QWidget *parent)
-    : QPlainTextEdit(parent)
+	: QPlainTextEdit(parent)
 {
-    setPlaceholderText(
-        QStringLiteral("Source editor")
-    );
+	setPlaceholderText(
+		QStringLiteral("Source editor")
+	);
 }

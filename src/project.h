@@ -20,57 +20,57 @@
 class Project
 {
 public:
-    Project();
-    Project(
-        const QString &name,
-        const QString &directory
-    );
+	Project();
+	Project(
+		const QString &name,
+		const QString &directory
+	);
 
-    QString
-    name() const;
+	QString
+	name() const;
 
-    void
-    setName(const QString &name);
+	void
+	setName(const QString &name);
 
-    QString
-    directory() const;
+	QString
+	directory() const;
 
-    void
-    setDirectory(const QString &directory);
+	void
+	setDirectory(const QString &directory);
 
-    QStringList
-    headerFiles() const;
+	QStringList
+	headerFiles() const;
 
-    QStringList
-    sourceFiles() const;
+	QStringList
+	sourceFiles() const;
 
-    QStringList
-    gasFiles() const;
+	QStringList
+	gasFiles() const;
 
-    void
-    addHeaderFile(const QString &path);
+	void
+	addHeaderFile(const QString &path);
 
-    void
-    removeHeaderFile(const QString &path);
+	void
+	removeHeaderFile(const QString &path);
 
-    void
-    addSourceFile(const QString &path);
+	void
+	addSourceFile(const QString &path);
 
-    void
-    removeSourceFile(const QString &path);
+	void
+	removeSourceFile(const QString &path);
 
-    void
-    addGasFile(const QString &path);
+	void
+	addGasFile(const QString &path);
 
-    void
-    removeGasFile(const QString &path);
+	void
+	removeGasFile(const QString &path);
 
 private:
-    QString m_name;
-    QString m_directory;
-    QStringList m_headerFiles;
-    QStringList m_sourceFiles;
-    QStringList m_gasFiles;
+	QString m_name;
+	QString m_directory;
+	QStringList m_headerFiles;
+	QStringList m_sourceFiles;
+	QStringList m_gasFiles;
 };
 
 #endif // TIGCC_QT_PROJECT_H

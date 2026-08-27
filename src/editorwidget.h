@@ -19,7 +19,7 @@
 class EditorWidget : public QPlainTextEdit
 {
 public:
-    explicit EditorWidget(QWidget *parent = nullptr);
+	explicit EditorWidget(QWidget *parent = nullptr);
 };
 
 #endif // TIGCC_QT_EDITORWIDGET_H
