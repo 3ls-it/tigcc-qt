@@ -1,16 +1,33 @@
 include(FindPackageHandleStandardArgs)
 
+set(
+    QScintilla_INCLUDE_SEARCH_PATHS
+    /usr/local/include
+    /usr/include
+    /data/data/com.termux/files/usr/include
+)
+
+set(
+    QScintilla_INCLUDE_SUFFIXES
+    qt6
+)
+
+if(CMAKE_LIBRARY_ARCHITECTURE)
+    list(
+        APPEND
+        QScintilla_INCLUDE_SUFFIXES
+        "${CMAKE_LIBRARY_ARCHITECTURE}/qt6"
+    )
+endif()
+
 find_path(
     QScintilla_INCLUDE_DIR
     NAMES
         Qsci/qsciscintilla.h
     PATHS
-        /usr/local
-        /usr
-        /data/data/com.termux/files/usr
+        ${QScintilla_INCLUDE_SEARCH_PATHS}
     PATH_SUFFIXES
-        include/qt6
-        include
+        ${QScintilla_INCLUDE_SUFFIXES}
 )
 
 find_library(
