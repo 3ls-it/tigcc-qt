@@ -9,7 +9,23 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets)
+list(
+    APPEND
+    CMAKE_MODULE_PATH
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake"
+)
+
+find_package(
+	Qt6
+	REQUIRED
+	COMPONENTS
+		Widgets
+)
+
+find_package(
+    QScintilla
+    REQUIRED
+)
 
 find_package(
     KF6TextEditor
@@ -48,5 +64,6 @@ qt_add_executable(tigcc-qt
 target_link_libraries(tigcc-qt
     PRIVATE
         Qt6::Widgets
+		QScintilla::QScintilla
         KF6::TextEditor
 )
