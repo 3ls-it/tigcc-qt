@@ -54,6 +54,9 @@ qt_add_executable(tigcc-qt
     src/editorbackend.cpp
     src/editorbackend.h
 
+	src/qscintillabackend.cpp
+	src/qscintillabackend.h
+
     src/ktexteditorbackend.cpp
     src/ktexteditorbackend.h
 	

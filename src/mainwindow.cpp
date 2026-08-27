@@ -28,7 +28,8 @@
 #include "mainwindow.h"
 #include "buildoutputwidget.h"
 #include "editorbackend.h"
-#include "ktexteditorbackend.h"
+//#include "ktexteditorbackend.h"
+#include "qscintillabackend.h"
 #include "projectmanager.h"
 #include "projecttreewidget.h"
 
@@ -42,7 +43,8 @@ MainWindow::MainWindow(QWidget *parent)
 		  QString()
 	  ),
 	  projectTree(new ProjectTreeWidget(this)),
-	  editor(new KTextEditorBackend(this)),
+	  editor(new QScintillaBackend(this)),
+	  //editor(new KTextEditorBackend(this)),
 	  buildOutput(new BuildOutputWidget(this)),
 	  saveFileAction(nullptr)
 {
