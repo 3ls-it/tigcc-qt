@@ -52,7 +52,9 @@ private:
 
 	void saveCurrentProject();
 
-	bool confirmClose();
+	bool confirmEditorChanges();
+
+	bool prepareForProjectChange();
 
     void updateProjectInterface();
 

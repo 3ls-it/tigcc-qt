@@ -350,6 +350,27 @@ KTextEditorBackend::saveAllFiles(
 	emitCurrentDocumentState();
 
 	return true;
+} // End saveAllFiles
+
+
+bool
+KTextEditorBackend::discardAllChanges(
+    QString *errorMessage
+)
+{
+	Q_UNUSED(errorMessage);
+
+	for (DocumentEntry *entry : m_documents) {
+		if (entry->document->isModified()) {
+			entry->document->setModified(
+				false
+			);
+		}
+	}
+
+	emitCurrentDocumentState();
+
+	return true;
 }
 
 

@@ -314,12 +314,12 @@ MainWindow::createNewProject()
 		return;
 	}
 
-	currentProject = Project(
+	const Project newProject(
 		trimmedName,
 		projectDirectory
 	);
 
-	currentProjectFile =
+	const QString newProjectFile =
 		QDir(projectDirectory).filePath(
 			QStringLiteral("%1.tigcc-project")
 				.arg(trimmedName)
@@ -329,8 +329,8 @@ MainWindow::createNewProject()
 	QString errorMessage;
 
 	if (!projectManager.saveProject(
-			currentProject,
-			currentProjectFile,
+			newProject,
+			newProjectFile,
 			&errorMessage
 		)) {
 		QMessageBox::critical(
@@ -341,6 +341,16 @@ MainWindow::createNewProject()
 
 		return;
 	}
+
+	if (!prepareForProjectChange()) {
+		return;
+	}
+
+	currentProject =
+		newProject;
+
+	currentProjectFile =
+		newProjectFile;
 
 	updateProjectInterface();
 
@@ -447,10 +457,18 @@ MainWindow::openProject()
 		return;
 	}
 
-	currentProject = loadedProject;
+	const QString loadedProjectFile =
+		QFileInfo(filePath).absoluteFilePath();
+
+	if (!prepareForProjectChange()) {
+		return;
+	}
+
+	currentProject =
+		loadedProject;
 
 	currentProjectFile =
-		QFileInfo(filePath).absoluteFilePath();
+		loadedProjectFile;
 
 	updateProjectInterface();
 
@@ -458,7 +476,7 @@ MainWindow::openProject()
 		QStringLiteral("Opened project \"%1\"")
 			.arg(currentProject.name())
 	);
-}
+} // End openProject
 
 
 void
@@ -783,7 +801,7 @@ MainWindow::updateEditorInterface()
 
 
 bool
-MainWindow::confirmClose()
+MainWindow::confirmEditorChanges()
 {
 	if (!editor->hasModifiedFiles()) {
 		return true;
@@ -844,7 +862,56 @@ MainWindow::confirmClose()
 		default:
 			return false;
 	}
-} // End confirmClose()
+} // End confirmEditorChanges
+
+
+bool
+MainWindow::prepareForProjectChange()
+{
+	if (!confirmEditorChanges()) {
+		return false;
+	}
+
+	/*
+	 * If modified files still exist, the user selected
+	 * Discard in confirmEditorChanges().
+	 */
+	if (editor->hasModifiedFiles()) {
+		QString errorMessage;
+
+		if (!editor->discardAllChanges(
+				&errorMessage
+			)) {
+			QMessageBox::critical(
+				this,
+				QStringLiteral(
+					"Cannot Discard Changes"
+				),
+				errorMessage
+			);
+
+			return false;
+		}
+	}
+
+	QString errorMessage;
+
+	if (!editor->closeAllFiles(
+			&errorMessage
+		)) {
+		QMessageBox::critical(
+			this,
+			QStringLiteral(
+				"Cannot Close Editor Files"
+			),
+			errorMessage
+		);
+
+		return false;
+	}
+
+	return true;
+}
 
 
 void
@@ -852,7 +919,7 @@ MainWindow::closeEvent(
 	QCloseEvent *event
 )
 {
-	if (confirmClose()) {
+	if (confirmEditorChanges()) {
 		event->accept();
 	} else {
 		event->ignore();

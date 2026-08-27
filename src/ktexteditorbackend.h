@@ -61,6 +61,11 @@ public:
 	) override;
 
 	bool
+	discardAllChanges(
+		QString *errorMessage = nullptr
+	) override;
+
+	bool
 	closeCurrentFile(
 		QString *errorMessage = nullptr
 	) override;
