@@ -18,6 +18,7 @@
 #include <QSaveFile>
 #include <QSignalBlocker>
 #include <QTabWidget>
+#include <QColor>
 
 #include "qscintillabackend.h"
 
@@ -54,6 +55,11 @@ QScintillaBackend::QScintillaBackend(
 	m_editor->setLexer(
 		lexer
 	);
+
+	configureEditorAppearance(
+		lexer
+	);
+
 
 	m_editor->setMarginType(
 		0,
@@ -324,3 +330,132 @@ QScintillaBackend::isModified() const
 {
 	return m_editor->isModified();
 }
+
+
+void
+QScintillaBackend::configureEditorAppearance(
+		QsciLexerCPP *lexer
+)
+{
+	if (lexer == nullptr ||
+			m_editor == nullptr) {
+			return;
+	}
+
+	const QColor editorBackground(
+			QStringLiteral("#121212")
+	);
+
+	/*
+	const QColor editorForeground(
+			QStringLiteral("#3a3a3a")
+	);
+	*/
+
+	const QColor marginBackground(
+			QStringLiteral("#31363b")
+	);
+
+	const QColor marginForeground(
+			QStringLiteral("#767676")
+	);
+
+	const QColor keywordColor(
+			QStringLiteral("#5bcdf3")
+	);
+
+	const QColor stringColor(
+			QStringLiteral("#947303")
+	);
+
+	const QColor commentColor(
+			QStringLiteral("#2e2e2e")
+	);
+
+	const QColor numberColor(
+			QStringLiteral("#755ca7")
+	);
+
+	const QColor preprocessorColor(
+			QStringLiteral("#7b1616")
+	);
+
+	const QColor operatorColor(
+			QStringLiteral("#f8f8f8")
+	);
+
+	m_editor->setMarginsBackgroundColor(
+			marginBackground
+	);
+
+	m_editor->setMarginsForegroundColor(
+			marginForeground
+	);
+
+	//m_editor->setCaretForegroundColor(
+	//		editorForeground
+	//);
+
+	m_editor->setCaretWidth(
+			3
+	);
+
+	//lexer->setDefaultColor(
+	//			editorForeground
+	//);
+
+	lexer->setDefaultPaper(
+			editorBackground
+	);
+
+	lexer->setColor(
+			commentColor,
+			QsciLexerCPP::Comment
+	);
+
+	lexer->setColor(
+			commentColor,
+			QsciLexerCPP::CommentLine
+	);
+
+	lexer->setColor(
+			commentColor,
+			QsciLexerCPP::CommentDoc
+	);
+
+	lexer->setColor(
+			numberColor,
+			QsciLexerCPP::Number
+	);
+
+	lexer->setColor(
+			keywordColor,
+			QsciLexerCPP::Keyword
+	);
+
+	lexer->setColor(
+			stringColor,
+			QsciLexerCPP::DoubleQuotedString
+	);
+
+	lexer->setColor(
+			stringColor,
+			QsciLexerCPP::SingleQuotedString
+	);
+
+	lexer->setColor(
+			operatorColor,
+			QsciLexerCPP::Operator
+	);
+
+	//lexer->setColor(
+	//			editorForeground,
+	//		QsciLexerCPP::Identifier
+	//);
+
+	lexer->setColor(
+			preprocessorColor,
+			QsciLexerCPP::PreProcessor
+	);
+}
+

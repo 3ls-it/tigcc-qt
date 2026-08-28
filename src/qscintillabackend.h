@@ -19,6 +19,7 @@
 class QTabWidget;
 class QWidget;
 class QsciScintilla;
+class QsciLexerCPP;
 
 
 class QScintillaBackend : public EditorBackend
@@ -71,7 +72,13 @@ public:
 	bool
 	isModified() const override;
 
+
 private:
+	void
+	configureEditorAppearance(
+		QsciLexerCPP *lexer
+	);
+
 	QTabWidget *m_tabs;
 	QsciScintilla *m_editor;
 	QString m_filePath;
