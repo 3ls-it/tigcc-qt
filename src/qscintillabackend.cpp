@@ -19,6 +19,7 @@
 #include <QSignalBlocker>
 #include <QTabWidget>
 #include <QColor>
+#include <QFont>
 
 #include "qscintillabackend.h"
 
@@ -95,7 +96,7 @@ QScintillaBackend::QScintillaBackend(
 			);
 		}
 	);
-}
+} // End constructor
 
 
 QWidget *
@@ -338,9 +339,17 @@ QScintillaBackend::configureEditorAppearance(
 )
 {
 	if (lexer == nullptr ||
-			m_editor == nullptr) {
-			return;
+		m_editor == nullptr) {
+		return;
 	}
+
+	// Default font size
+	QFont editorFont =
+		m_editor->font();
+
+	editorFont.setPointSize(
+		editorFont.pointSize() + 3
+	);
 
 	// Dark theme colours
 	const QColor editorBackground(
@@ -382,80 +391,115 @@ QScintillaBackend::configureEditorAppearance(
 	const QColor operatorColor(
 			QStringLiteral("#f8f8f8")
 	);
-
-	// Set colour choices
-	m_editor->setMarginsBackgroundColor(
-			marginBackground
+	
+	// Set font assignments
+	m_editor->setMarginsFont(
+		editorFont
 	);
 
-	m_editor->setMarginsForegroundColor(
-			marginForeground
-	);
-
-	m_editor->setCaretForegroundColor(
-			editorForeground
-	);
-
-	m_editor->setCaretWidth(
-			4
-	);
-
-	lexer->setDefaultColor(
-				editorForeground
+	lexer->setDefaultFont(
+		editorFont
 	);
 
 	lexer->setDefaultPaper(
-			editorBackground
+		editorBackground
+	);
+
+	const int cppStyles[] = {
+		QsciLexerCPP::Default,
+		QsciLexerCPP::Comment,
+		QsciLexerCPP::CommentLine,
+		QsciLexerCPP::CommentDoc,
+		QsciLexerCPP::Number,
+		QsciLexerCPP::Keyword,
+		QsciLexerCPP::DoubleQuotedString,
+		QsciLexerCPP::SingleQuotedString,
+		QsciLexerCPP::Operator,
+		QsciLexerCPP::Identifier,
+		QsciLexerCPP::PreProcessor
+	};
+
+	for (const int style : cppStyles) {
+		lexer->setFont(
+			editorFont,
+			style
+		);
+
+		lexer->setPaper(
+			editorBackground,
+			style
+		);
+	}
+
+	// Set colour assignments
+	m_editor->setMarginsBackgroundColor(
+		marginBackground
+	);
+
+	m_editor->setMarginsForegroundColor(
+		marginForeground
+	);
+
+	m_editor->setCaretForegroundColor(
+		editorForeground
+	);
+
+	m_editor->setCaretWidth(
+		4
+	);
+
+	lexer->setDefaultColor(
+		editorForeground
 	);
 
 	lexer->setColor(
-			commentColor,
-			QsciLexerCPP::Comment
+		commentColor,
+		QsciLexerCPP::Comment
 	);
 
 	lexer->setColor(
-			commentColor,
-			QsciLexerCPP::CommentLine
+		commentColor,
+		QsciLexerCPP::CommentLine
 	);
 
 	lexer->setColor(
-			commentColor,
-			QsciLexerCPP::CommentDoc
+		commentColor,
+		QsciLexerCPP::CommentDoc
 	);
 
 	lexer->setColor(
-			numberColor,
-			QsciLexerCPP::Number
+		numberColor,
+		QsciLexerCPP::Number
 	);
 
 	lexer->setColor(
-			keywordColor,
-			QsciLexerCPP::Keyword
+		keywordColor,
+		QsciLexerCPP::Keyword
 	);
 
 	lexer->setColor(
-			stringColor,
-			QsciLexerCPP::DoubleQuotedString
+		stringColor,
+		QsciLexerCPP::DoubleQuotedString
 	);
 
 	lexer->setColor(
-			stringColor,
-			QsciLexerCPP::SingleQuotedString
+		stringColor,
+		QsciLexerCPP::SingleQuotedString
 	);
 
 	lexer->setColor(
-			operatorColor,
-			QsciLexerCPP::Operator
+		operatorColor,
+		QsciLexerCPP::Operator
 	);
 
 	lexer->setColor(
-				editorForeground,
-			QsciLexerCPP::Identifier
+		editorForeground,
+		QsciLexerCPP::Identifier
 	);
 
 	lexer->setColor(
-			preprocessorColor,
-			QsciLexerCPP::PreProcessor
+		preprocessorColor,
+		QsciLexerCPP::PreProcessor
 	);
-}
+} // End confitureEditorAppearance
 
