@@ -81,6 +81,11 @@ private:
 	void
 	updateEditorInterface();
 
+	void
+	adjustEditorFontSize(
+		int adjustment
+	);
+
 	Project currentProject;
 
 	QString currentProjectFile;

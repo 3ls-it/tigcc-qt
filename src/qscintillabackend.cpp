@@ -30,7 +30,9 @@ QScintillaBackend::QScintillaBackend(
 )
 	: EditorBackend(parent),
 	  m_tabs(new QTabWidget(parent)),
-	  m_editor(new QsciScintilla(m_tabs))
+	  m_editor(new QsciScintilla(m_tabs)),
+	  m_lexer(nullptr),
+	  m_fontPointSize(0)
 {
 	m_tabs->setDocumentMode(
 		true
@@ -48,19 +50,21 @@ QScintillaBackend::QScintillaBackend(
 		true
 	);
 
-	auto *lexer =
+	m_lexer =
 		new QsciLexerCPP(
 			m_editor
 		);
 
 	m_editor->setLexer(
-		lexer
+		m_lexer
 	);
+
+	m_fontPointSize =
+		m_editor->font().pointSize();
 
 	configureEditorAppearance(
-		lexer
+		m_lexer
 	);
-
 
 	m_editor->setMarginType(
 		0,
@@ -78,7 +82,7 @@ QScintillaBackend::QScintillaBackend(
 	);
 
 	m_editor->setCaretWidth(
-		2
+		4
 	);
 
 	m_tabs->addTab(
@@ -348,7 +352,7 @@ QScintillaBackend::configureEditorAppearance(
 		m_editor->font();
 
 	editorFont.setPointSize(
-		editorFont.pointSize() + 3
+		m_fontPointSize
 	);
 
 	// Dark theme colours
@@ -503,3 +507,87 @@ QScintillaBackend::configureEditorAppearance(
 	);
 } // End confitureEditorAppearance
 
+
+int
+QScintillaBackend::fontPointSize() const
+{
+	return m_fontPointSize;
+}
+
+
+bool
+QScintillaBackend::setFontPointSize(
+	int pointSize,
+	QString *errorMessage
+)
+{
+	if (pointSize < 6 ||
+		pointSize > 36) {
+		if (errorMessage != nullptr) {
+			*errorMessage =
+				QStringLiteral(
+					"Font size must be between "
+					"6 and 36 points."
+				);
+		}
+
+		return false;
+	}
+
+	if (m_editor == nullptr ||
+		m_lexer == nullptr) {
+		if (errorMessage != nullptr) {
+			*errorMessage =
+				QStringLiteral(
+					"The editor is not initialized."
+				);
+		}
+
+		return false;
+	}
+
+	if (pointSize == m_fontPointSize) {
+		return true;
+	}
+
+	QFont editorFont =
+		m_editor->font();
+
+	editorFont.setPointSize(
+		pointSize
+	);
+
+	const int cppStyles[] = {
+		QsciLexerCPP::Default,
+		QsciLexerCPP::Comment,
+		QsciLexerCPP::CommentLine,
+		QsciLexerCPP::CommentDoc,
+		QsciLexerCPP::Number,
+		QsciLexerCPP::Keyword,
+		QsciLexerCPP::DoubleQuotedString,
+		QsciLexerCPP::SingleQuotedString,
+		QsciLexerCPP::Operator,
+		QsciLexerCPP::Identifier,
+		QsciLexerCPP::PreProcessor
+	};
+
+	for (const int style : cppStyles) {
+		m_lexer->setFont(
+			editorFont,
+			style
+		);
+	}
+
+	m_editor->setMarginsFont(
+		editorFont
+	);
+
+	m_fontPointSize =
+		pointSize;
+
+	emit fontPointSizeChanged(
+		m_fontPointSize
+	);
+
+	return true;
+}

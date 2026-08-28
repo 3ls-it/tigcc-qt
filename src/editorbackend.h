@@ -74,6 +74,15 @@ public:
 	virtual bool
 	isModified() const = 0;
 
+	virtual int
+	fontPointSize() const = 0;
+
+	virtual bool
+	setFontPointSize(
+		int pointSize,
+		QString *errorMessage = nullptr
+	) = 0;
+
 signals:
 	void
 	currentFileChanged(
@@ -88,6 +97,11 @@ signals:
 	void
 	editorError(
 		const QString &message
+	);
+
+	void
+	fontPointSizeChanged(
+		int pointSize
 	);
 };
 

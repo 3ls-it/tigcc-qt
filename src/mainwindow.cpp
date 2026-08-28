@@ -91,7 +91,7 @@ MainWindow::MainWindow(QWidget *parent)
 		QStringLiteral("&File")
     );
 
-	// Save
+	// File>Save
 	saveFileAction = fileMenu->addAction(
 		QStringLiteral("&Save")
 	);
@@ -111,7 +111,7 @@ MainWindow::MainWindow(QWidget *parent)
 		&MainWindow::saveCurrentFile
 	);
 
-	// Quit
+	// File>Quit
     auto *quitAction = fileMenu->addAction(
 		QStringLiteral("&Quit")
     );
@@ -167,7 +167,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 	projectMenu->addSeparator();
 
-	// New header files
+	// Project>New header files
 	auto *newHeaderFileAction = projectMenu->addAction(
 		QStringLiteral("New Header File")
 	);
@@ -179,7 +179,7 @@ MainWindow::MainWindow(QWidget *parent)
 		&MainWindow::createHeaderFile
 	);//End
 
-	// New source files
+	// Project>New source files
 	auto *newSourceFileAction = projectMenu->addAction(
 		QStringLiteral("New Source File")
 	);
@@ -191,7 +191,7 @@ MainWindow::MainWindow(QWidget *parent)
 		&MainWindow::createSourceFile
 	);//End
 
-	// New GAS files
+	// Project>New GAS files
 	auto *newGasFileAction = projectMenu->addAction(
 		QStringLiteral("New GNU Assembly File")
 	);
@@ -232,6 +232,58 @@ MainWindow::MainWindow(QWidget *parent)
 		}
 	);
 
+	// View menu
+		auto *viewMenu = menuBar()->addMenu(
+		QStringLiteral("&View")
+	);
+
+	auto *editorFontSizeMenu =
+		viewMenu->addMenu(
+			QStringLiteral("Editor Font Size")
+		);
+
+	auto *increaseFontSizeAction =
+		editorFontSizeMenu->addAction(
+			QStringLiteral("Increase")
+		);
+
+	increaseFontSizeAction->setShortcut(
+		QKeySequence(
+			Qt::CTRL | Qt::Key_Equal
+		)
+	);
+
+	connect(
+		increaseFontSizeAction,
+		&QAction::triggered,
+		this,
+		[this]() {
+			adjustEditorFontSize(
+				1
+			);
+		}
+	);
+
+	auto *decreaseFontSizeAction =
+		editorFontSizeMenu->addAction(
+			QStringLiteral("Decrease")
+		);
+
+	decreaseFontSizeAction->setShortcut(
+		QKeySequence::ZoomOut
+	);
+
+	connect(
+		decreaseFontSizeAction,
+		&QAction::triggered,
+		this,
+		[this]() {
+			adjustEditorFontSize(
+				-1
+			);
+		}
+	);
+
 	// Help menu
     auto *helpMenu = menuBar()->addMenu(
 		QStringLiteral("&Help")
@@ -245,6 +297,21 @@ MainWindow::MainWindow(QWidget *parent)
     statusBar()->showMessage(
 		QStringLiteral("Ready")
     );
+
+	connect(
+		editor,
+		&EditorBackend::fontPointSizeChanged,
+		this,
+		[this](int pointSize) {
+			statusBar()->showMessage(
+				QStringLiteral(
+					"Editor font size: %1 pt"
+				).arg(
+					pointSize
+				)
+			);
+		}
+	);
 } // End constructor
  
 
@@ -914,6 +981,42 @@ MainWindow::prepareForProjectChange()
 
 	return true;
 } // End prepareForProjectChange
+
+
+void
+MainWindow::adjustEditorFontSize(
+	int adjustment
+)
+{
+	const int currentSize =
+		editor->fontPointSize();
+
+	const int newSize =
+		currentSize + adjustment;
+
+	QString errorMessage;
+
+	if (!editor->setFontPointSize(
+			newSize,
+			&errorMessage
+		)) {
+		if (!errorMessage.isEmpty()) {
+			statusBar()->showMessage(
+				errorMessage
+			);
+		}
+
+		return;
+	}
+
+	statusBar()->showMessage(
+		QStringLiteral(
+			"Editor font size: %1 pt"
+		).arg(
+			editor->fontPointSize()
+		)
+	);
+}
 
 
 void

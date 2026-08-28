@@ -32,6 +32,15 @@ public:
 	QWidget *
 	widget() override;
 
+	int
+	fontPointSize() const override;
+
+	bool
+	setFontPointSize(
+			int pointSize,
+			QString *errorMessage = nullptr
+	) override;
+
 	bool
 	openFile(
 		const QString &filePath,
@@ -81,6 +90,8 @@ private:
 
 	QTabWidget *m_tabs;
 	QsciScintilla *m_editor;
+	QsciLexerCPP *m_lexer;
+	int m_fontPointSize;
 	QString m_filePath;
 };
 
