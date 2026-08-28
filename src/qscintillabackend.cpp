@@ -14,6 +14,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QIODevice>
+#include <QSaveFile>
 #include <QSignalBlocker>
 #include <QTabWidget>
 
@@ -155,16 +156,68 @@ QScintillaBackend::saveCurrentFile(
 	QString *errorMessage
 )
 {
-	if (errorMessage != nullptr) {
-		*errorMessage =
-			QStringLiteral(
-				"QScintilla file saving is not "
-				"implemented yet."
-			);
+	if (m_filePath.isEmpty()) {
+		if (errorMessage != nullptr) {
+			*errorMessage =
+				QStringLiteral(
+					"No file is currently open."
+				);
+		}
+
+		return false;
 	}
 
-	return false;
-}
+	QSaveFile file(
+		m_filePath
+	);
+
+	if (!file.open(
+			QIODevice::WriteOnly
+		)) {
+		if (errorMessage != nullptr) {
+			*errorMessage =
+				file.errorString();
+		}
+
+		return false;
+	}
+
+	const QByteArray fileData =
+		m_editor->text().toUtf8();
+
+	const qint64 bytesWritten =
+		file.write(
+			fileData
+		);
+
+	if (bytesWritten != fileData.size()) {
+		if (errorMessage != nullptr) {
+			*errorMessage =
+				file.errorString();
+		}
+
+		return false;
+	}
+
+	if (!file.commit()) {
+		if (errorMessage != nullptr) {
+			*errorMessage =
+				file.errorString();
+		}
+
+		return false;
+	}
+
+	m_editor->setModified(
+		false
+	);
+
+	emit modificationChanged(
+		false
+	);
+
+	return true;
+} // End saveCurrentFile
 
 
 bool
@@ -179,9 +232,13 @@ QScintillaBackend::saveAllFiles(
 	QString *errorMessage
 )
 {
-	Q_UNUSED(errorMessage);
+	if (!m_editor->isModified()) {
+		return true;
+	}
 
-	return true;
+	return saveCurrentFile(
+		errorMessage
+	);
 }
 
 
@@ -190,7 +247,15 @@ QScintillaBackend::discardAllChanges(
 	QString *errorMessage
 )
 {
-	Q_UNUSED(errorMessage);
+		Q_UNUSED(errorMessage);
+
+	m_editor->setModified(
+		false
+	);
+
+	emit modificationChanged(
+		false
+	);
 
 	return true;
 }
