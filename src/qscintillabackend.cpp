@@ -10,6 +10,7 @@
  */
 
 #include <Qsci/qsciscintilla.h>
+#include <Qsci/qscilexercpp.h>
 
 #include <QFile>
 #include <QFileInfo>
@@ -43,6 +44,34 @@ QScintillaBackend::QScintillaBackend(
 
 	m_editor->setUtf8(
 		true
+	);
+
+	auto *lexer =
+		new QsciLexerCPP(
+			m_editor
+		);
+
+	m_editor->setLexer(
+		lexer
+	);
+
+	m_editor->setMarginType(
+		0,
+		QsciScintilla::NumberMargin
+	);
+
+	m_editor->setMarginLineNumbers(
+		0,
+		true
+	);
+
+	m_editor->setMarginWidth(
+		0,
+		40
+	);
+
+	m_editor->setCaretWidth(
+		2
 	);
 
 	m_tabs->addTab(
