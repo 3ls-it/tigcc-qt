@@ -364,7 +364,7 @@ QScintillaBackend::configureEditorAppearance(
 	);
 
 	const QColor stringColor(
-			QStringLiteral("#947303")
+			QStringLiteral("#f5d676")
 	);
 
 	const QColor commentColor(
@@ -372,7 +372,7 @@ QScintillaBackend::configureEditorAppearance(
 	);
 
 	const QColor numberColor(
-			QStringLiteral("#755ca7")
+			QStringLiteral("#9775da")
 	);
 
 	const QColor preprocessorColor(
