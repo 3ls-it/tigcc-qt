@@ -342,15 +342,14 @@ QScintillaBackend::configureEditorAppearance(
 			return;
 	}
 
+	// Dark theme colours
 	const QColor editorBackground(
 			QStringLiteral("#121212")
 	);
 
-	/*
 	const QColor editorForeground(
-			QStringLiteral("#3a3a3a")
+			QStringLiteral("#b2b2b2")
 	);
-	*/
 
 	const QColor marginBackground(
 			QStringLiteral("#31363b")
@@ -369,7 +368,7 @@ QScintillaBackend::configureEditorAppearance(
 	);
 
 	const QColor commentColor(
-			QStringLiteral("#2e2e2e")
+			QStringLiteral("#505050")
 	);
 
 	const QColor numberColor(
@@ -377,13 +376,14 @@ QScintillaBackend::configureEditorAppearance(
 	);
 
 	const QColor preprocessorColor(
-			QStringLiteral("#7b1616")
+			QStringLiteral("#c22323")
 	);
 
 	const QColor operatorColor(
 			QStringLiteral("#f8f8f8")
 	);
 
+	// Set colour choices
 	m_editor->setMarginsBackgroundColor(
 			marginBackground
 	);
@@ -392,17 +392,17 @@ QScintillaBackend::configureEditorAppearance(
 			marginForeground
 	);
 
-	//m_editor->setCaretForegroundColor(
-	//		editorForeground
-	//);
-
-	m_editor->setCaretWidth(
-			3
+	m_editor->setCaretForegroundColor(
+			editorForeground
 	);
 
-	//lexer->setDefaultColor(
-	//			editorForeground
-	//);
+	m_editor->setCaretWidth(
+			4
+	);
+
+	lexer->setDefaultColor(
+				editorForeground
+	);
 
 	lexer->setDefaultPaper(
 			editorBackground
@@ -448,10 +448,10 @@ QScintillaBackend::configureEditorAppearance(
 			QsciLexerCPP::Operator
 	);
 
-	//lexer->setColor(
-	//			editorForeground,
-	//		QsciLexerCPP::Identifier
-	//);
+	lexer->setColor(
+				editorForeground,
+			QsciLexerCPP::Identifier
+	);
 
 	lexer->setColor(
 			preprocessorColor,
