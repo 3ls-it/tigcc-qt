@@ -132,6 +132,11 @@ private:
 		QsciScintilla *editor
 	);
 
+	void
+	setTabCloseToolTip(
+		int tabIndex
+	);
+
 	QTabWidget *m_tabs;
 	QLabel *m_emptyState;
 	QList<DocumentEntry *> m_documents;

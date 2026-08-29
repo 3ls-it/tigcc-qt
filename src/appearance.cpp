@@ -21,109 +21,90 @@
 
 namespace Appearance
 {
+	void
+	applyDarkTheme()
+	{
+		qApp->setStyle(
+			QStyleFactory::create(
+				QStringLiteral("Fusion")
+			)
+		);
 
-void
-applyDarkTheme()
-{
-	//qDebug() << "Applying TIGCC-Qt dark theme";
+		QPalette palette =
+			qApp->palette();
 
-	//qDebug() << "Available styles:"
-	//		 << QStyleFactory::keys();
+		palette.setColor(
+			QPalette::Window,
+			QColor(53, 53, 53)
+		);
 
-	qApp->setStyle(
-		QStyleFactory::create(
-			QStringLiteral("Fusion")
-		)
-	);
+		palette.setColor(
+			QPalette::WindowText,
+			Qt::white
+		);
 
-	QPalette palette =
-		qApp->palette();
+		palette.setColor(
+			QPalette::Base,
+			QColor(35, 35, 35)
+		);
 
-	palette.setColor(
-		QPalette::Window,
-		QColor(53, 53, 53)
-	);
+		palette.setColor(
+			QPalette::AlternateBase,
+			QColor(53, 53, 53)
+		);
 
-	palette.setColor(
-		QPalette::WindowText,
-		Qt::white
-	);
+		palette.setColor(
+			QPalette::ToolTipBase,
+			QColor("#000000")
+		);
 
-	palette.setColor(
-		QPalette::Base,
-		QColor(35, 35, 35)
-	);
+		palette.setColor(
+			QPalette::ToolTipText,
+			QColor("#ffffff")
+		);
 
-	palette.setColor(
-		QPalette::AlternateBase,
-		QColor(53, 53, 53)
-	);
+		palette.setColor(
+			QPalette::Text,
+			Qt::white
+		);
 
-	palette.setColor(
-		QPalette::ToolTipBase,
-		Qt::white
-	);
+		palette.setColor(
+			QPalette::Button,
+			QColor(53, 53, 53)
+		);
 
-	palette.setColor(
-		QPalette::ToolTipText,
-		Qt::white
-	);
+		palette.setColor(
+			QPalette::ButtonText,
+			Qt::white
+		);
 
-	palette.setColor(
-		QPalette::Text,
-		Qt::white
-	);
+		palette.setColor(
+			QPalette::BrightText,
+			Qt::red
+		);
 
-	palette.setColor(
-		QPalette::Button,
-		QColor(53, 53, 53)
-	);
+		palette.setColor(
+			QPalette::Link,
+			QColor(42, 130, 218)
+		);
 
-	palette.setColor(
-		QPalette::ButtonText,
-		Qt::white
-	);
+		palette.setColor(
+			QPalette::Highlight,
+			QColor(42, 130, 218)
+		);
 
-	palette.setColor(
-		QPalette::BrightText,
-		Qt::red
-	);
+		palette.setColor(
+			QPalette::HighlightedText,
+			Qt::black
+		);
 
-	palette.setColor(
-		QPalette::Link,
-		QColor(42, 130, 218)
-	);
+		palette.setColor(
+			QPalette::PlaceholderText,
+			QColor(180, 180, 180)
+		);
 
-	palette.setColor(
-		QPalette::Highlight,
-		QColor(42, 130, 218)
-	);
-
-	palette.setColor(
-		QPalette::HighlightedText,
-		Qt::black
-	);
-
-	palette.setColor(
-		QPalette::PlaceholderText,
-		QColor(180, 180, 180)
-	);
-
-	qApp->setPalette(
-		palette
-	);
-
-	/*
-	qDebug() << "Window color:"
-			 << qApp->palette().color(
-					QPalette::Window
-				);
-
-	qDebug() << "Base color:"
-			 << qApp->palette().color(
-					QPalette::Base
-				);
-	*/
-}
-
-}
+		qApp->setPalette(
+			palette
+		);
+	} // End applyDarkTheme
+} // End namespace

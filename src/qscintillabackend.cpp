@@ -21,6 +21,7 @@
 #include <QLabel>
 #include <QSaveFile>
 #include <QSignalBlocker>
+#include <QTabBar>
 #include <QTabWidget>
 
 #include "qscintillabackend.h"
@@ -337,6 +338,10 @@ QScintillaBackend::openFile(
 
 	m_tabs->setTabsClosable(
 		true
+	);
+
+	setTabCloseToolTip(
+		tabIndex
 	);
 
 	auto *entry =
@@ -1004,3 +1009,42 @@ QScintillaBackend::setFontPointSize(
 
 	return true;
 } // End setFontPointSize
+
+
+void
+QScintillaBackend::setTabCloseToolTip(
+	int tabIndex
+)
+{
+	if (tabIndex < 0 ||
+		tabIndex >= m_tabs->count()) {
+		return;
+	}
+
+	QTabBar *tabBar =
+		m_tabs->tabBar();
+
+	if (tabBar == nullptr) {
+		return;
+	}
+
+	QWidget *closeButton =
+		tabBar->tabButton(
+			tabIndex,
+			QTabBar::RightSide
+		);
+
+	if (closeButton == nullptr) {
+		closeButton =
+			tabBar->tabButton(
+				tabIndex,
+				QTabBar::LeftSide
+			);
+	}
+
+	if (closeButton != nullptr) {
+		closeButton->setToolTip(
+			QStringLiteral("Close")
+		);
+	}
+}
