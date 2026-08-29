@@ -71,6 +71,28 @@ QScintillaBackend::QScintillaBackend(
 			emitCurrentDocumentState();
 		}
 	);
+
+	connect(
+		m_tabs,
+		&QTabWidget::tabCloseRequested,
+		this,
+		[this](int index) {
+			if (index < 0 ||
+				index >= m_tabs->count()) {
+				return;
+			}
+
+			m_tabs->setCurrentIndex(
+				index
+			);
+
+			QString errorMessage;
+
+			closeCurrentFile(
+				&errorMessage
+			);
+		}
+	);
 } // End constructor
 
 
@@ -524,10 +546,79 @@ QScintillaBackend::closeCurrentFile(
 	QString *errorMessage
 )
 {
-	Q_UNUSED(errorMessage);
+	DocumentEntry *entry =
+		currentDocumentEntry();
+
+	if (entry == nullptr) {
+		if (errorMessage != nullptr) {
+			*errorMessage =
+				QStringLiteral(
+					"No editor document is open."
+				);
+		}
+
+		return false;
+	}
+
+	if (entry->editor->isModified()) {
+		if (errorMessage != nullptr) {
+			*errorMessage =
+				QStringLiteral(
+					"The current file has unsaved changes."
+				);
+		}
+
+		return false;
+	}
+
+	const int tabIndex =
+		m_tabs->indexOf(
+			entry->widget
+		);
+
+	if (tabIndex < 0) {
+		if (errorMessage != nullptr) {
+			*errorMessage =
+				QStringLiteral(
+					"The editor tab could not be found."
+				);
+		}
+
+		return false;
+	}
+
+	m_documents.removeOne(
+		entry
+	);
+
+	m_tabs->removeTab(
+		tabIndex
+	);
+
+	entry->widget->deleteLater();
+
+	delete entry;
+
+	for (DocumentEntry *remaining :
+			m_documents) {
+		remaining->tabIndex =
+			m_tabs->indexOf(
+				remaining->widget
+			);
+	}
+
+	if (m_documents.isEmpty()) {
+		showEmptyState();
+	} else {
+		m_tabs->setTabsClosable(
+			true
+		);
+	}
+
+	emitCurrentDocumentState();
 
 	return true;
-}
+} // End closeCurrentFile
 
 
 bool
@@ -535,11 +626,42 @@ QScintillaBackend::closeAllFiles(
 	QString *errorMessage
 )
 {
-	Q_UNUSED(errorMessage);
+	for (DocumentEntry *entry :
+			m_documents) {
+		if (entry->editor->isModified()) {
+			if (errorMessage != nullptr) {
+				*errorMessage =
+					QStringLiteral(
+						"One or more files have "
+						"unsaved changes."
+					);
+			}
+
+			return false;
+		}
+	}
+
+	while (!m_documents.isEmpty()) {
+		m_tabs->setCurrentIndex(
+			0
+		);
+
+		if (!closeCurrentFile(
+				errorMessage
+			)) {
+			return false;
+		}
+	}
+
+	if (m_emptyState == nullptr) {
+		showEmptyState();
+	}
+
+	emitCurrentDocumentState();
 
 	return true;
-}
-
+} // End closeAllFiles
+ 
 
 QString
 QScintillaBackend::currentFilePath() const
