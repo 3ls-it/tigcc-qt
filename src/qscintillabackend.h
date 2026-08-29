@@ -12,6 +12,8 @@
 #ifndef TIGCC_QT_QSCINTILLABACKEND_H
 #define TIGCC_QT_QSCINTILLABACKEND_H
 
+#include <QList>
+
 #include "editorbackend.h"
 
 
@@ -83,16 +85,47 @@ public:
 
 
 private:
+	struct DocumentEntry
+	{
+		QsciScintilla *editor;
+		QsciLexerCPP *lexer;
+		QWidget *widget;
+		QString filePath;
+		int tabIndex;
+	};
+
+	DocumentEntry *
+	currentDocumentEntry() const;
+
+	DocumentEntry *
+	documentEntryForPath(
+		const QString &filePath
+	) const;
+
+	bool
+	saveDocumentEntry(
+		DocumentEntry *entry,
+		QString *errorMessage
+	);
+
+	void
+	emitCurrentDocumentState();
+
+	void
+	updateTabTitle(
+		DocumentEntry *entry
+	);
+
 	void
 	configureEditorAppearance(
-		QsciLexerCPP *lexer
+		QsciLexerCPP *lexer,
+		QsciScintilla *editor
 	);
 
 	QTabWidget *m_tabs;
-	QsciScintilla *m_editor;
-	QsciLexerCPP *m_lexer;
+	QList<DocumentEntry *> m_documents;
 	int m_fontPointSize;
-	QString m_filePath;
+
 };
 
 #endif // TIGCC_QT_QSCINTILLABACKEND_H

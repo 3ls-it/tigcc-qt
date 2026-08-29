@@ -12,6 +12,7 @@
 #include <Qsci/qsciscintilla.h>
 #include <Qsci/qscilexercpp.h>
 
+#include <QApplication>
 #include <QFile>
 #include <QFileInfo>
 #include <QIODevice>
@@ -30,74 +31,34 @@ QScintillaBackend::QScintillaBackend(
 )
 	: EditorBackend(parent),
 	  m_tabs(new QTabWidget(parent)),
-	  m_editor(new QsciScintilla(m_tabs)),
-	  m_lexer(nullptr),
-	  m_fontPointSize(0)
+	  m_fontPointSize(
+		  QApplication::font().pointSize()
+	  )
 {
+	if (m_fontPointSize <= 0) {
+		m_fontPointSize = 12;
+	}
+
 	m_tabs->setDocumentMode(
 		true
 	);
 
 	m_tabs->setTabsClosable(
-		false
+		true
 	);
 
 	m_tabs->setMovable(
 		true
 	);
 
-	m_editor->setUtf8(
-		true
-	);
-
-	m_lexer =
-		new QsciLexerCPP(
-			m_editor
-		);
-
-	m_editor->setLexer(
-		m_lexer
-	);
-
-	m_fontPointSize =
-		m_editor->font().pointSize();
-
-	configureEditorAppearance(
-		m_lexer
-	);
-
-	m_editor->setMarginType(
-		0,
-		QsciScintilla::NumberMargin
-	);
-
-	m_editor->setMarginLineNumbers(
-		0,
-		true
-	);
-
-	m_editor->setMarginWidth(
-		0,
-		40
-	);
-
-	m_editor->setCaretWidth(
-		4
-	);
-
-	m_tabs->addTab(
-		m_editor,
-		QStringLiteral("QScintilla")
-	);
-
 	connect(
-		m_editor,
-		&QsciScintilla::textChanged,
+		m_tabs,
+		&QTabWidget::currentChanged,
 		this,
-		[this]() {
-			emit modificationChanged(
-				m_editor->isModified()
-			);
+		[this](int index) {
+			Q_UNUSED(index);
+
+			emitCurrentDocumentState();
 		}
 	);
 } // End constructor
@@ -107,6 +68,46 @@ QWidget *
 QScintillaBackend::widget()
 {
 	return m_tabs;
+}
+
+
+QScintillaBackend::DocumentEntry *
+QScintillaBackend::currentDocumentEntry() const
+{
+	QWidget *currentWidget =
+		m_tabs->currentWidget();
+
+	if (currentWidget == nullptr) {
+		return nullptr;
+	}
+
+	for (DocumentEntry *entry : m_documents) {
+		if (entry->widget == currentWidget) {
+			return entry;
+		}
+	}
+
+	return nullptr;
+}
+
+
+QScintillaBackend::DocumentEntry *
+QScintillaBackend::documentEntryForPath(
+	const QString &filePath
+) const
+{
+	const QString normalizedPath =
+		QFileInfo(
+			filePath
+		).absoluteFilePath();
+
+	for (DocumentEntry *entry : m_documents) {
+		if (entry->filePath == normalizedPath) {
+			return entry;
+		}
+	}
+
+	return nullptr;
 }
 
 
@@ -134,8 +135,26 @@ QScintillaBackend::openFile(
 		return false;
 	}
 
+	const QString normalizedPath =
+		fileInfo.absoluteFilePath();
+
+	DocumentEntry *existingEntry =
+		documentEntryForPath(
+			normalizedPath
+		);
+
+	if (existingEntry != nullptr) {
+		m_tabs->setCurrentIndex(
+			existingEntry->tabIndex
+		);
+
+		emitCurrentDocumentState();
+
+		return true;
+	}
+
 	QFile file(
-		fileInfo.absoluteFilePath()
+		normalizedPath
 	);
 
 	if (!file.open(
@@ -159,48 +178,103 @@ QScintillaBackend::openFile(
 			fileData
 		);
 
-	/*
-	 * Prevent the intermediate setText() operation
-	 * from producing a spurious application-level
-	 * modification notification.
-	 */
-	const QSignalBlocker signalBlocker(
-		m_editor
+	auto *editor =
+		new QsciScintilla(
+			m_tabs
+		);
+
+	editor->setUtf8(
+		true
 	);
 
-	m_editor->setText(
-		fileText
+	auto *lexer =
+		new QsciLexerCPP(
+			editor
+		);
+
+	editor->setLexer(
+		lexer
 	);
 
-	m_editor->setModified(
-		false
+	configureEditorAppearance(
+		lexer,
+		editor
 	);
 
-	m_filePath =
-		fileInfo.absoluteFilePath();
+	{
+		const QSignalBlocker signalBlocker(
+			editor
+		);
 
-	emit currentFileChanged(
-		m_filePath
+		editor->setText(
+			fileText
+		);
+
+		editor->setModified(
+			false
+		);
+	}
+
+	const QString tabLabel =
+		fileInfo.fileName();
+
+	const int tabIndex =
+		m_tabs->addTab(
+			editor,
+			tabLabel
+		);
+
+	auto *entry =
+		new DocumentEntry{
+			editor,
+			lexer,
+			editor,
+			normalizedPath,
+			tabIndex
+		};
+
+	m_documents.append(
+		entry
 	);
 
-	emit modificationChanged(
-		false
+	connect(
+		editor,
+		&QsciScintilla::textChanged,
+		this,
+		[this, entry]() {
+			updateTabTitle(
+				entry
+			);
+
+			if (currentDocumentEntry() == entry) {
+				emit modificationChanged(
+					entry->editor->isModified()
+				);
+			}
+		}
 	);
+
+	m_tabs->setCurrentIndex(
+		tabIndex
+	);
+
+	emitCurrentDocumentState();
 
 	return true;
 } // End openFile
 
 
 bool
-QScintillaBackend::saveCurrentFile(
+QScintillaBackend::saveDocumentEntry(
+	DocumentEntry *entry,
 	QString *errorMessage
 )
 {
-	if (m_filePath.isEmpty()) {
+	if (entry == nullptr) {
 		if (errorMessage != nullptr) {
 			*errorMessage =
 				QStringLiteral(
-					"No file is currently open."
+					"No editor document is available."
 				);
 		}
 
@@ -208,7 +282,7 @@ QScintillaBackend::saveCurrentFile(
 	}
 
 	QSaveFile file(
-		m_filePath
+		entry->filePath
 	);
 
 	if (!file.open(
@@ -223,7 +297,7 @@ QScintillaBackend::saveCurrentFile(
 	}
 
 	const QByteArray fileData =
-		m_editor->text().toUtf8();
+		entry->editor->text().toUtf8();
 
 	const qint64 bytesWritten =
 		file.write(
@@ -248,13 +322,45 @@ QScintillaBackend::saveCurrentFile(
 		return false;
 	}
 
-	m_editor->setModified(
+	entry->editor->setModified(
 		false
 	);
 
-	emit modificationChanged(
-		false
+	updateTabTitle(
+		entry
 	);
+
+	return true;
+} // End saveDocumentEntry
+
+
+bool
+QScintillaBackend::saveCurrentFile(
+	QString *errorMessage
+)
+{
+	DocumentEntry *entry =
+		currentDocumentEntry();
+
+	if (entry == nullptr) {
+		if (errorMessage != nullptr) {
+			*errorMessage =
+				QStringLiteral(
+					"No file is currently open."
+				);
+		}
+
+		return false;
+	}
+
+	if (!saveDocumentEntry(
+			entry,
+			errorMessage
+		)) {
+		return false;
+	}
+
+	emitCurrentDocumentState();
 
 	return true;
 } // End saveCurrentFile
@@ -263,7 +369,13 @@ QScintillaBackend::saveCurrentFile(
 bool
 QScintillaBackend::hasModifiedFiles() const
 {
-	return m_editor->isModified();
+	for (DocumentEntry *entry : m_documents) {
+		if (entry->editor->isModified()) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 
@@ -272,14 +384,23 @@ QScintillaBackend::saveAllFiles(
 	QString *errorMessage
 )
 {
-	if (!m_editor->isModified()) {
-		return true;
+	for (DocumentEntry *entry : m_documents) {
+		if (!entry->editor->isModified()) {
+			continue;
+		}
+
+		if (!saveDocumentEntry(
+				entry,
+				errorMessage
+			)) {
+			return false;
+		}
 	}
 
-	return saveCurrentFile(
-		errorMessage
-	);
-}
+	emitCurrentDocumentState();
+
+	return true;
+} // End saveAllFiles
 
 
 bool
@@ -287,18 +408,22 @@ QScintillaBackend::discardAllChanges(
 	QString *errorMessage
 )
 {
-		Q_UNUSED(errorMessage);
+	Q_UNUSED(errorMessage);
 
-	m_editor->setModified(
-		false
-	);
+	for (DocumentEntry *entry : m_documents) {
+		entry->editor->setModified(
+			false
+		);
 
-	emit modificationChanged(
-		false
-	);
+		updateTabTitle(
+			entry
+		);
+	}
+
+	emitCurrentDocumentState();
 
 	return true;
-}
+} // End discardAllChanges
 
 
 bool
@@ -326,30 +451,45 @@ QScintillaBackend::closeAllFiles(
 QString
 QScintillaBackend::currentFilePath() const
 {
-	return m_filePath;
+	DocumentEntry *entry =
+		currentDocumentEntry();
+
+	if (entry == nullptr) {
+		return QString();
+	}
+
+	return entry->filePath;
 }
 
 
 bool
 QScintillaBackend::isModified() const
 {
-	return m_editor->isModified();
+	DocumentEntry *entry =
+		currentDocumentEntry();
+
+	if (entry == nullptr) {
+		return false;
+	}
+
+	return entry->editor->isModified();
 }
 
 
 void
 QScintillaBackend::configureEditorAppearance(
-		QsciLexerCPP *lexer
+		QsciLexerCPP *lexer,
+		QsciScintilla *editor
 )
 {
 	if (lexer == nullptr ||
-		m_editor == nullptr) {
+		editor == nullptr) {
 		return;
 	}
 
 	// Default font size
 	QFont editorFont =
-		m_editor->font();
+		editor->font();
 
 	editorFont.setPointSize(
 		m_fontPointSize
@@ -397,7 +537,7 @@ QScintillaBackend::configureEditorAppearance(
 	);
 	
 	// Set font assignments
-	m_editor->setMarginsFont(
+	editor->setMarginsFont(
 		editorFont
 	);
 
@@ -436,19 +576,19 @@ QScintillaBackend::configureEditorAppearance(
 	}
 
 	// Set colour assignments
-	m_editor->setMarginsBackgroundColor(
+	editor->setMarginsBackgroundColor(
 		marginBackground
 	);
 
-	m_editor->setMarginsForegroundColor(
+	editor->setMarginsForegroundColor(
 		marginForeground
 	);
 
-	m_editor->setCaretForegroundColor(
+	editor->setCaretForegroundColor(
 		editorForeground
 	);
 
-	m_editor->setCaretWidth(
+	editor->setCaretWidth(
 		4
 	);
 
@@ -505,7 +645,75 @@ QScintillaBackend::configureEditorAppearance(
 		preprocessorColor,
 		QsciLexerCPP::PreProcessor
 	);
-} // End confitureEditorAppearance
+} // End configureEditorAppearance
+
+
+
+void
+QScintillaBackend::updateTabTitle(
+	DocumentEntry *entry
+)
+{
+	if (entry == nullptr) {
+		return;
+	}
+
+	const int tabIndex =
+		m_tabs->indexOf(
+			entry->widget
+		);
+
+	if (tabIndex < 0) {
+		return;
+	}
+
+	QString title =
+		QFileInfo(
+			entry->filePath
+		).fileName();
+
+	if (entry->editor->isModified()) {
+		title.append(
+			QStringLiteral(" *")
+		);
+	}
+
+	m_tabs->setTabText(
+		tabIndex,
+		title
+	);
+
+	entry->tabIndex =
+		tabIndex;
+} // End updateTabTiltle
+
+
+void
+QScintillaBackend::emitCurrentDocumentState()
+{
+	DocumentEntry *entry =
+		currentDocumentEntry();
+
+	if (entry == nullptr) {
+		emit currentFileChanged(
+			QString()
+		);
+
+		emit modificationChanged(
+			false
+		);
+
+		return;
+	}
+
+	emit currentFileChanged(
+		entry->filePath
+	);
+
+	emit modificationChanged(
+		entry->editor->isModified()
+	);
+}
 
 
 int
@@ -534,28 +742,12 @@ QScintillaBackend::setFontPointSize(
 		return false;
 	}
 
-	if (m_editor == nullptr ||
-		m_lexer == nullptr) {
-		if (errorMessage != nullptr) {
-			*errorMessage =
-				QStringLiteral(
-					"The editor is not initialized."
-				);
-		}
-
-		return false;
-	}
-
 	if (pointSize == m_fontPointSize) {
 		return true;
 	}
 
-	QFont editorFont =
-		m_editor->font();
-
-	editorFont.setPointSize(
-		pointSize
-	);
+	m_fontPointSize =
+		pointSize;
 
 	const int cppStyles[] = {
 		QsciLexerCPP::Default,
@@ -571,23 +763,29 @@ QScintillaBackend::setFontPointSize(
 		QsciLexerCPP::PreProcessor
 	};
 
-	for (const int style : cppStyles) {
-		m_lexer->setFont(
-			editorFont,
-			style
+	for (DocumentEntry *entry : m_documents) {
+		QFont editorFont =
+			entry->editor->font();
+
+		editorFont.setPointSize(
+			m_fontPointSize
+		);
+
+		for (const int style : cppStyles) {
+			entry->lexer->setFont(
+				editorFont,
+				style
+			);
+		}
+
+		entry->editor->setMarginsFont(
+			editorFont
 		);
 	}
-
-	m_editor->setMarginsFont(
-		editorFont
-	);
-
-	m_fontPointSize =
-		pointSize;
 
 	emit fontPointSizeChanged(
 		m_fontPointSize
 	);
 
 	return true;
-}
+} // End setFontPointSize
