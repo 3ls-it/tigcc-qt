@@ -20,6 +20,7 @@
 
 class QTabWidget;
 class QWidget;
+class QLabel;
 class QsciScintilla;
 class QsciLexerCPP;
 
@@ -116,6 +117,15 @@ private:
 		DocumentEntry *entry
 	);
 
+	QLabel *
+	createEmptyStateWidget();
+
+	void
+	showEmptyState();
+
+	void
+	hideEmptyState();
+
 	void
 	configureEditorAppearance(
 		QsciLexerCPP *lexer,
@@ -123,9 +133,9 @@ private:
 	);
 
 	QTabWidget *m_tabs;
+	QLabel *m_emptyState;
 	QList<DocumentEntry *> m_documents;
 	int m_fontPointSize;
-
 };
 
 #endif // TIGCC_QT_QSCINTILLABACKEND_H

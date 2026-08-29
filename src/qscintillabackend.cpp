@@ -13,14 +13,15 @@
 #include <Qsci/qscilexercpp.h>
 
 #include <QApplication>
+#include <QColor>
 #include <QFile>
 #include <QFileInfo>
+#include <QFont>
 #include <QIODevice>
+#include <QLabel>
 #include <QSaveFile>
 #include <QSignalBlocker>
 #include <QTabWidget>
-#include <QColor>
-#include <QFont>
 
 #include "qscintillabackend.h"
 
@@ -31,6 +32,7 @@ QScintillaBackend::QScintillaBackend(
 )
 	: EditorBackend(parent),
 	  m_tabs(new QTabWidget(parent)),
+	  m_emptyState(nullptr),
 	  m_fontPointSize(
 		  QApplication::font().pointSize()
 	  )
@@ -44,11 +46,19 @@ QScintillaBackend::QScintillaBackend(
 	);
 
 	m_tabs->setTabsClosable(
-		true
+		false
 	);
 
 	m_tabs->setMovable(
 		true
+	);
+
+	m_emptyState =
+		createEmptyStateWidget();
+
+	m_tabs->addTab(
+		m_emptyState,
+		QStringLiteral("Welcome")
 	);
 
 	connect(
@@ -108,6 +118,81 @@ QScintillaBackend::documentEntryForPath(
 	}
 
 	return nullptr;
+}
+
+
+QLabel *
+QScintillaBackend::createEmptyStateWidget()
+{
+	auto *emptyState =
+		new QLabel(
+			QStringLiteral(
+				"No file is open.\n\n"
+				"Create or open a project, then "
+				"double-click a file in the "
+				"project tree."
+			),
+			m_tabs
+		);
+
+	emptyState->setAlignment(
+		Qt::AlignCenter
+	);
+
+	emptyState->setMinimumHeight(
+		160
+	);
+
+	return emptyState;
+}
+
+
+void
+QScintillaBackend::hideEmptyState()
+{
+	if (m_emptyState == nullptr) {
+		return;
+	}
+
+	const int tabIndex =
+		m_tabs->indexOf(
+			m_emptyState
+		);
+
+	if (tabIndex >= 0) {
+		m_tabs->removeTab(
+			tabIndex
+		);
+	}
+
+	m_emptyState->deleteLater();
+	m_emptyState = nullptr;
+}
+
+
+
+void
+QScintillaBackend::showEmptyState()
+{
+	if (m_emptyState != nullptr) {
+		return;
+	}
+
+	m_emptyState =
+		createEmptyStateWidget();
+
+	m_tabs->addTab(
+		m_emptyState,
+		QStringLiteral("Welcome")
+	);
+
+	m_tabs->setCurrentWidget(
+		m_emptyState
+	);
+
+	m_tabs->setTabsClosable(
+		false
+	);
 }
 
 
@@ -218,11 +303,19 @@ QScintillaBackend::openFile(
 	const QString tabLabel =
 		fileInfo.fileName();
 
+	if (m_documents.isEmpty()) {
+		hideEmptyState();
+	}
+
 	const int tabIndex =
 		m_tabs->addTab(
 			editor,
 			tabLabel
 		);
+
+	m_tabs->setTabsClosable(
+		true
+	);
 
 	auto *entry =
 		new DocumentEntry{
