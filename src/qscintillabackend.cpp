@@ -761,6 +761,29 @@ QScintillaBackend::configureEditorAppearance(
 		editorFont
 	);
 
+	editor->setMarginType(
+		0,
+		QsciScintilla::NumberMargin
+	);
+
+	editor->setMarginLineNumbers(
+		0,
+		true
+	);
+
+	editor->setMarginWidth(
+		0,
+		QStringLiteral("0000")
+	);
+
+	lexer->setDefaultFont(
+		editorFont
+	);
+
+	lexer->setDefaultPaper(
+		editorBackground
+	);
+
 	lexer->setDefaultFont(
 		editorFont
 	);

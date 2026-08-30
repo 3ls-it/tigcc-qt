@@ -32,13 +32,13 @@
 
 
 
-
 KTextEditorBackend::KTextEditorBackend(
 	QWidget *parent
 )
 	: EditorBackend(parent),
 	  m_tabs(new QTabWidget(parent)),
-	  m_emptyState(nullptr)
+	  m_emptyState(nullptr),
+	  m_fontPointSize(10)
 {
 	m_tabs->setDocumentMode(true);
 	m_tabs->setTabsClosable(true);
@@ -120,6 +120,33 @@ KTextEditorBackend::currentDocumentEntry() const
 	}
 
 	return nullptr;
+}
+
+
+int
+KTextEditorBackend::fontPointSize() const
+{
+	return m_fontPointSize;
+}
+
+
+bool
+KTextEditorBackend::setFontPointSize(
+	int pointSize,
+	QString *errorMessage
+)
+{
+	Q_UNUSED(pointSize);
+
+	if (errorMessage != nullptr) {
+		*errorMessage =
+			QStringLiteral(
+				"Font-size changes are not implemented "
+				"for the KTextEditor backend."
+			);
+	}
+
+	return false;
 }
 
 

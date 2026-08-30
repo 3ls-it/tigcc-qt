@@ -32,7 +32,7 @@ main(int argc, char *argv[])
 	);
 
 	application.setApplicationVersion(
-	QStringLiteral("0.1.0")
+	QStringLiteral("0.1.1")
 	);
 
 	MainWindow mainWindow;

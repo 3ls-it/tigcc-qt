@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(TIGCC-Qt
-    VERSION 0.1.0
+    VERSION 0.1.1
     LANGUAGES CXX
 )
 
@@ -28,6 +28,12 @@ find_package(
 )
 
 find_package(
+	qtermwidget6
+	CONFIG
+	REQUIRED
+)
+
+find_package(
     KF6TextEditor
     REQUIRED
 )
@@ -51,22 +57,26 @@ qt_add_executable(tigcc-qt
     src/buildoutputwidget.cpp
     src/buildoutputwidget.h
 
+    src/editorbackendfactory.cpp
+    src/editorbackendfactory.h
+
     src/editorbackend.cpp
     src/editorbackend.h
 
-	src/qscintillabackend.cpp
-	src/qscintillabackend.h
+    src/qscintillabackend.cpp
+    src/qscintillabackend.h
 
     src/ktexteditorbackend.cpp
     src/ktexteditorbackend.h
 	
-	src/appearance.cpp
-	src/appearance.h
+    src/appearance.cpp
+    src/appearance.h
 )
 
 target_link_libraries(tigcc-qt
     PRIVATE
         Qt6::Widgets
 		QScintilla::QScintilla
+		qtermwidget6
         KF6::TextEditor
 )

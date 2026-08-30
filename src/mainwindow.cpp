@@ -9,6 +9,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <QActionGroup>
 #include <QDir>
 #include <QFile>
 #include <QFileDialog>
@@ -28,11 +29,9 @@
 #include "mainwindow.h"
 #include "buildoutputwidget.h"
 #include "editorbackend.h"
-//#include "ktexteditorbackend.h"
-#include "qscintillabackend.h"
+#include "editorbackendfactory.h"
 #include "projectmanager.h"
 #include "projecttreewidget.h"
-
 
 
 
@@ -43,9 +42,19 @@ MainWindow::MainWindow(QWidget *parent)
 		  QString()
 	  ),
 	  projectTree(new ProjectTreeWidget(this)),
-	  editor(new QScintillaBackend(this)),
-	  //editor(new KTextEditorBackend(this)),
+	  editor(
+		  createEditorBackend(
+			  EditorBackendType::QScintilla,
+			  this
+		  )
+	  ),
 	  buildOutput(new BuildOutputWidget(this)),
+	  rightSplitter(nullptr),
+	  editorBackendType(
+		  EditorBackendType::QScintilla
+	  ),
+	  qscintillaBackendAction(nullptr),
+	  ktextEditorBackendAction(nullptr),
 	  saveFileAction(nullptr)
 {
     setWindowTitle(
@@ -56,10 +65,10 @@ MainWindow::MainWindow(QWidget *parent)
 
 	updateProjectInterface();
 
-    auto *rightSplitter = new QSplitter(
+	rightSplitter = new QSplitter(
 		Qt::Vertical,
 		this
-    );
+	);
 
 	rightSplitter->addWidget(
 		editor->widget()
@@ -210,31 +219,81 @@ MainWindow::MainWindow(QWidget *parent)
 		&MainWindow::openProjectFile
 	);
 
-	connect(
-		editor,
-		&EditorBackend::currentFileChanged,
-		this,
-		[this](const QString &filePath) {
-			Q_UNUSED(filePath);
-
-			updateEditorInterface();
-		}
-	);
-
-	connect(
-		editor,
-		&EditorBackend::modificationChanged,
-		this,
-		[this](bool modified) {
-			Q_UNUSED(modified);
-
-			updateEditorInterface();
-		}
-	);
-
 	// View menu
 		auto *viewMenu = menuBar()->addMenu(
 		QStringLiteral("&View")
+	);
+
+	auto *editorBackendMenu =
+		viewMenu->addMenu(
+			QStringLiteral("Editor Backend")
+		);
+
+	auto *editorBackendActionGroup =
+		new QActionGroup(
+			editorBackendMenu
+		);
+
+	editorBackendActionGroup->setExclusive(
+		true
+	);
+
+	qscintillaBackendAction =
+		editorBackendMenu->addAction(
+			QStringLiteral("QScintilla")
+		);
+
+	qscintillaBackendAction->setCheckable(
+		true
+	);
+
+	editorBackendActionGroup->addAction(
+		qscintillaBackendAction
+	);
+
+	ktextEditorBackendAction =
+		editorBackendMenu->addAction(
+			QStringLiteral("KTextEditor")
+		);
+
+	ktextEditorBackendAction->setCheckable(
+		true
+	);
+
+	editorBackendActionGroup->addAction(
+		ktextEditorBackendAction
+	);
+
+	qscintillaBackendAction->setChecked(
+		editorBackendType ==
+		EditorBackendType::QScintilla
+	);
+
+	ktextEditorBackendAction->setChecked(
+		editorBackendType ==
+		EditorBackendType::KTextEditor
+	);
+
+	connect(
+		qscintillaBackendAction,
+		&QAction::triggered,
+		this,
+		[this]() {
+			switchEditorBackend(
+				EditorBackendType::QScintilla
+			);
+		}
+	);
+
+	connect(
+		ktextEditorBackendAction,
+		&QAction::triggered,
+		this,
+		[this]() {
+			switchEditorBackend(
+				EditorBackendType::KTextEditor
+			);
+		}
 	);
 
 	auto *editorFontSizeMenu =
@@ -298,6 +357,35 @@ MainWindow::MainWindow(QWidget *parent)
 		QStringLiteral("Ready")
     );
 
+	connectEditorBackend();
+} // End constructor
+ 
+
+void
+MainWindow::connectEditorBackend()
+{
+	connect(
+		editor,
+		&EditorBackend::currentFileChanged,
+		this,
+		[this](const QString &filePath) {
+			Q_UNUSED(filePath);
+
+			updateEditorInterface();
+		}
+	);
+
+	connect(
+		editor,
+		&EditorBackend::modificationChanged,
+		this,
+		[this](bool modified) {
+			Q_UNUSED(modified);
+
+			updateEditorInterface();
+		}
+	);
+
 	connect(
 		editor,
 		&EditorBackend::fontPointSizeChanged,
@@ -312,8 +400,123 @@ MainWindow::MainWindow(QWidget *parent)
 			);
 		}
 	);
-} // End constructor
- 
+} // End connectEditorBackend
+
+
+void
+MainWindow::switchEditorBackend(
+	EditorBackendType type
+)
+{
+	if (type == editorBackendType) {
+		return;
+	}
+
+	if (!prepareForProjectChange()) {
+		return;
+	}
+
+	const int currentFontPointSize =
+		editor->fontPointSize();
+
+	EditorBackend *newEditor =
+		createEditorBackend(
+			type,
+			this
+		);
+
+	if (newEditor == nullptr) {
+		QMessageBox::critical(
+			this,
+			QStringLiteral(
+				"Cannot Create Editor Backend"
+			),
+			QStringLiteral(
+				"The requested editor backend "
+				"could not be created."
+			)
+		);
+
+		return;
+	}
+
+	QWidget *oldEditorWidget =
+		editor->widget();
+
+	QWidget *newEditorWidget =
+		newEditor->widget();
+
+	if (newEditorWidget == nullptr) {
+		newEditor->deleteLater();
+
+		QMessageBox::critical(
+			this,
+			QStringLiteral(
+				"Cannot Create Editor Widget"
+			),
+			QStringLiteral(
+				"The requested editor backend did "
+				"not provide an editor widget."
+			)
+		);
+
+		return;
+	}
+
+	rightSplitter->replaceWidget(
+		0,
+		newEditorWidget
+	);
+
+	oldEditorWidget->deleteLater();
+	editor->deleteLater();
+
+	editor =
+		newEditor;
+
+	editorBackendType =
+		type;
+
+	updateEditorBackendActions();
+	connectEditorBackend();
+
+	if (editor->fontPointSize() !=
+		currentFontPointSize) {
+		QString errorMessage;
+
+		editor->setFontPointSize(
+			currentFontPointSize,
+			&errorMessage
+		);
+	}
+
+	updateEditorInterface();
+
+	statusBar()->showMessage(
+		QStringLiteral(
+			"Editor backend changed"
+		)
+	);
+} // End switchEditorBackend
+
+
+void
+MainWindow::updateEditorBackendActions()
+{
+	if (qscintillaBackendAction != nullptr) {
+		qscintillaBackendAction->setChecked(
+			editorBackendType ==
+			EditorBackendType::QScintilla
+		);
+	}
+
+	if (ktextEditorBackendAction != nullptr) {
+		ktextEditorBackendAction->setChecked(
+			editorBackendType ==
+			EditorBackendType::KTextEditor
+		);
+	}
+} // End updateEditorBackendActions
 
 
 void

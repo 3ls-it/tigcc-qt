@@ -97,6 +97,15 @@ private slots:
 		KTextEditor::Document *document
 	);
 
+	int
+	fontPointSize() const override;
+
+	bool
+	setFontPointSize(
+		int pointSize,
+		QString *errorMessage = nullptr
+	) override;
+
 private:
 	struct DocumentEntry
 	{
@@ -135,5 +144,6 @@ private:
 	QLabel *m_emptyState;
 	QTabWidget *m_tabs;
 	QList<DocumentEntry *> m_documents;
+	int m_fontPointSize;
 };
 #endif // TIGCC_QT_KTEXTEDITORBACKEND_H

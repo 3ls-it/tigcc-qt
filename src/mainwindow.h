@@ -15,16 +15,17 @@
 #include <QMainWindow>
 #include <QString>
 
+#include "editorbackendfactory.h"
 #include "project.h"
 
 
 
-
-class QAction;
 class BuildOutputWidget;
 class EditorBackend;
 class ProjectTreeWidget;
+class QAction;
 class QCloseEvent;
+class QSplitter;
 
 class MainWindow : public QMainWindow
 {
@@ -46,6 +47,8 @@ protected:
 	) override;
 
 private:
+	void updateEditorBackendActions();
+
 	void createNewProject();
 
     void openProject();	
@@ -71,6 +74,14 @@ private:
 	);
 
 	void
+	connectEditorBackend();
+
+	void
+	switchEditorBackend(
+		EditorBackendType type
+	);
+
+	void
 	openProjectFile(
 		const QString &relativePath
 	);
@@ -86,16 +97,15 @@ private:
 		int adjustment
 	);
 
+	QSplitter *rightSplitter;
+	EditorBackendType editorBackendType;
+	QAction *qscintillaBackendAction;
+	QAction *ktextEditorBackendAction;
 	Project currentProject;
-
 	QString currentProjectFile;
-
 	ProjectTreeWidget *projectTree;
-
 	EditorBackend *editor;
-
 	BuildOutputWidget *buildOutput;
-
 	QAction *saveFileAction;
 };
 
