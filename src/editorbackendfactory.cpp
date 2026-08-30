@@ -29,11 +29,12 @@ createEditorBackend(
 				parent
 			);
 
+#ifdef ENABLE_KTEXTEDITOR
 		case EditorBackendType::KTextEditor:
 			return new KTextEditorBackend(
 				parent
 			);
-	}
-
+#endif
+        }
 	return nullptr;
 }

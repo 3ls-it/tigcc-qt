@@ -54,7 +54,9 @@ MainWindow::MainWindow(QWidget *parent)
 		  EditorBackendType::QScintilla
 	  ),
 	  qscintillaBackendAction(nullptr),
+#ifdef ENABLE_KTEXTEDITOR
 	  ktextEditorBackendAction(nullptr),
+#endif
 	  saveFileAction(nullptr)
 {
     setWindowTitle(
@@ -251,6 +253,7 @@ MainWindow::MainWindow(QWidget *parent)
 		qscintillaBackendAction
 	);
 
+#ifdef ENABLE_KTEXTEDITOR
 	ktextEditorBackendAction =
 		editorBackendMenu->addAction(
 			QStringLiteral("KTextEditor")
@@ -263,16 +266,19 @@ MainWindow::MainWindow(QWidget *parent)
 	editorBackendActionGroup->addAction(
 		ktextEditorBackendAction
 	);
+#endif
 
 	qscintillaBackendAction->setChecked(
 		editorBackendType ==
 		EditorBackendType::QScintilla
 	);
 
+#ifdef ENABLE_KTEXTEDITOR
 	ktextEditorBackendAction->setChecked(
 		editorBackendType ==
 		EditorBackendType::KTextEditor
 	);
+#endif
 
 	connect(
 		qscintillaBackendAction,
@@ -285,6 +291,7 @@ MainWindow::MainWindow(QWidget *parent)
 		}
 	);
 
+#ifdef ENABLE_KTEXTEDITOR
 	connect(
 		ktextEditorBackendAction,
 		&QAction::triggered,
@@ -295,6 +302,7 @@ MainWindow::MainWindow(QWidget *parent)
 			);
 		}
 	);
+#endif
 
 	auto *editorFontSizeMenu =
 		viewMenu->addMenu(
@@ -510,12 +518,14 @@ MainWindow::updateEditorBackendActions()
 		);
 	}
 
+#ifdef ENABLE_KTEXTEDITOR
 	if (ktextEditorBackendAction != nullptr) {
 		ktextEditorBackendAction->setChecked(
 			editorBackendType ==
 			EditorBackendType::KTextEditor
 		);
 	}
+#endif
 } // End updateEditorBackendActions
 
 

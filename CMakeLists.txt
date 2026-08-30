@@ -27,20 +27,26 @@ find_package(
     REQUIRED
 )
 
+option(ENABLE_KTEXTEDITOR "Enable KTextEditor backend")
+
 find_package(
 	qtermwidget6
 	CONFIG
 	REQUIRED
 )
 
-find_package(
-    KF6TextEditor
-    REQUIRED
-)
+if (ENABLE_KTEXTEDITOR)
+    set(ENABLE_KTEXTEDITOR 1)
+
+    find_package(
+        KF6TextEditor
+        REQUIRED
+    )
+endif (ENABLE_KTEXTEDITOR)
 
 qt_standard_project_setup()
 
-qt_add_executable(tigcc-qt
+set (SOURCES
     src/main.cpp
     src/mainwindow.cpp
     src/mainwindow.h
@@ -66,17 +72,32 @@ qt_add_executable(tigcc-qt
     src/qscintillabackend.cpp
     src/qscintillabackend.h
 
-    src/ktexteditorbackend.cpp
-    src/ktexteditorbackend.h
-	
     src/appearance.cpp
     src/appearance.h
+)
+
+if (ENABLE_KTEXTEDITOR)
+    list(APPEND SOURCES
+        src/ktexteditorbackend.cpp
+        src/ktexteditorbackend.h
+    )
+endif(ENABLE_KTEXTEDITOR)
+
+qt_add_executable(tigcc-qt
+    ${SOURCES}
 )
 
 target_link_libraries(tigcc-qt
     PRIVATE
         Qt6::Widgets
-		QScintilla::QScintilla
-		qtermwidget6
-        KF6::TextEditor
+                QScintilla::QScintilla
+                qtermwidget6
 )
+
+
+if (ENABLE_KTEXTEDITOR)
+    target_link_libraries(tigcc-qt
+        PRIVATE
+            KF6::TextEditor
+    )
+endif(ENABLE_KTEXTEDITOR)
