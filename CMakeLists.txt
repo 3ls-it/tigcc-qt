@@ -36,8 +36,7 @@ find_package(
 )
 
 if (ENABLE_KTEXTEDITOR)
-    set(ENABLE_KTEXTEDITOR 1)
-
+    set(USE_KTEXTEDITOR 1)
     find_package(
         KF6TextEditor
         REQUIRED
@@ -45,6 +44,8 @@ if (ENABLE_KTEXTEDITOR)
 endif (ENABLE_KTEXTEDITOR)
 
 qt_standard_project_setup()
+
+configure_file(src/config.h.in config.h)
 
 set (SOURCES
     src/main.cpp
@@ -86,6 +87,8 @@ endif(ENABLE_KTEXTEDITOR)
 qt_add_executable(tigcc-qt
     ${SOURCES}
 )
+
+target_include_directories(tigcc-qt PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
 
 target_link_libraries(tigcc-qt
     PRIVATE

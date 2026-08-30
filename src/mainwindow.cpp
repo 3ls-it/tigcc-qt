@@ -26,6 +26,7 @@
 #include <QStatusBar>
 #include <QCloseEvent>
 
+#include "config.h"
 #include "mainwindow.h"
 #include "buildoutputwidget.h"
 #include "editorbackend.h"
@@ -54,7 +55,7 @@ MainWindow::MainWindow(QWidget *parent)
 		  EditorBackendType::QScintilla
 	  ),
 	  qscintillaBackendAction(nullptr),
-#ifdef ENABLE_KTEXTEDITOR
+#ifdef USE_KTEXTEDITOR
 	  ktextEditorBackendAction(nullptr),
 #endif
 	  saveFileAction(nullptr)
@@ -253,7 +254,7 @@ MainWindow::MainWindow(QWidget *parent)
 		qscintillaBackendAction
 	);
 
-#ifdef ENABLE_KTEXTEDITOR
+#ifdef USE_KTEXTEDITOR
 	ktextEditorBackendAction =
 		editorBackendMenu->addAction(
 			QStringLiteral("KTextEditor")
@@ -273,7 +274,7 @@ MainWindow::MainWindow(QWidget *parent)
 		EditorBackendType::QScintilla
 	);
 
-#ifdef ENABLE_KTEXTEDITOR
+#ifdef USE_KTEXTEDITOR
 	ktextEditorBackendAction->setChecked(
 		editorBackendType ==
 		EditorBackendType::KTextEditor
@@ -291,7 +292,7 @@ MainWindow::MainWindow(QWidget *parent)
 		}
 	);
 
-#ifdef ENABLE_KTEXTEDITOR
+#ifdef USE_KTEXTEDITOR
 	connect(
 		ktextEditorBackendAction,
 		&QAction::triggered,
@@ -518,7 +519,7 @@ MainWindow::updateEditorBackendActions()
 		);
 	}
 
-#ifdef ENABLE_KTEXTEDITOR
+#ifdef USE_KTEXTEDITOR
 	if (ktextEditorBackendAction != nullptr) {
 		ktextEditorBackendAction->setChecked(
 			editorBackendType ==

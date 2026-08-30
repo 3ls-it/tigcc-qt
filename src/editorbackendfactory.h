@@ -22,7 +22,7 @@ class QWidget;
 enum class EditorBackendType
 {
 	QScintilla,
-#ifdef ENABLE_KTEXTEDITOR
+#ifdef USE_KTEXTEDITOR
 	KTextEditor
 #endif
 };

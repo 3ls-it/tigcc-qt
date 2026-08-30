@@ -9,6 +9,8 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include "config.h"
+
 #include "editorbackendfactory.h"
 
 #include "editorbackend.h"
@@ -29,7 +31,7 @@ createEditorBackend(
 				parent
 			);
 
-#ifdef ENABLE_KTEXTEDITOR
+#ifdef USE_KTEXTEDITOR
 		case EditorBackendType::KTextEditor:
 			return new KTextEditorBackend(
 				parent
