@@ -14,8 +14,9 @@
 #include "editorbackendfactory.h"
 
 #include "editorbackend.h"
-#include "ktexteditorbackend.h"
 #include "qscintillabackend.h"
+#include "vimbackend.h"
+#include "ktexteditorbackend.h"
 
 
 
@@ -30,7 +31,10 @@ createEditorBackend(
 			return new QScintillaBackend(
 				parent
 			);
-
+		case EditorBackendType::Vim:
+			return new VimBackend(
+				parent
+			);
 #ifdef USE_KTEXTEDITOR
 		case EditorBackendType::KTextEditor:
 			return new KTextEditorBackend(

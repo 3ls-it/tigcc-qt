@@ -75,6 +75,9 @@ set (SOURCES
 
     src/appearance.cpp
     src/appearance.h
+
+    src/vimbackend.cpp
+    src/vimbackend.h
 )
 
 if (ENABLE_KTEXTEDITOR)
