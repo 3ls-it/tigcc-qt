@@ -71,6 +71,9 @@ qt_add_executable(tigcc-qt
 	
     src/appearance.cpp
     src/appearance.h
+
+    src/vimbackend.cpp
+    src/vimbackend.h
 )
 
 target_link_libraries(tigcc-qt

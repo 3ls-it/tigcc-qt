@@ -238,6 +238,7 @@ MainWindow::MainWindow(QWidget *parent)
 		true
 	);
 
+	// QScintilla
 	qscintillaBackendAction =
 		editorBackendMenu->addAction(
 			QStringLiteral("QScintilla")
@@ -251,6 +252,21 @@ MainWindow::MainWindow(QWidget *parent)
 		qscintillaBackendAction
 	);
 
+	// Vim
+	vimBackendAction =
+		editorBackendMenu->addAction(
+			QStringLiteral("Vim")
+		);
+
+	vimBackendAction->setCheckable(
+		true
+	);
+
+	editorBackendActionGroup->addAction(
+		vimBackendAction
+	);
+
+	// Kate
 	ktextEditorBackendAction =
 		editorBackendMenu->addAction(
 			QStringLiteral("KTextEditor")
@@ -274,6 +290,7 @@ MainWindow::MainWindow(QWidget *parent)
 		EditorBackendType::KTextEditor
 	);
 
+	// Conect the backends
 	connect(
 		qscintillaBackendAction,
 		&QAction::triggered,
@@ -281,6 +298,17 @@ MainWindow::MainWindow(QWidget *parent)
 		[this]() {
 			switchEditorBackend(
 				EditorBackendType::QScintilla
+			);
+		}
+	);
+
+	connect(
+		vimBackendAction,
+		&QAction::triggered,
+		this,
+		[this]() {
+			switchEditorBackend(
+				EditorBackendType::Vim
 			);
 		}
 	);
@@ -507,6 +535,14 @@ MainWindow::updateEditorBackendActions()
 		qscintillaBackendAction->setChecked(
 			editorBackendType ==
 			EditorBackendType::QScintilla
+		);
+	}
+
+
+	if (vimBackendAction != nullptr) {
+		vimBackendAction->setChecked(
+			editorBackendType ==
+			EditorBackendType::Vim
 		);
 	}
 

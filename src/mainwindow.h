@@ -106,6 +106,7 @@ private:
 	ProjectTreeWidget *projectTree;
 	EditorBackend *editor;
 	BuildOutputWidget *buildOutput;
+	QAction *vimBackendAction;
 	QAction *saveFileAction;
 };
 

@@ -22,7 +22,8 @@ class QWidget;
 enum class EditorBackendType
 {
 	QScintilla,
-	KTextEditor
+	KTextEditor,
+	Vim
 };
 
 EditorBackend *
