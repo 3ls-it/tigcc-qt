@@ -9,7 +9,7 @@
 &nbsp;
 &nbsp;
 <div align=center>
-<h4>A modern, cross-platform Qt-based IDE for the TIGCC toolchain. A successor to KTIGCC.</h4>
+<h4>A modern, cross-platform Qt-based IDE for the GCC4TI toolchain. A successor to KTIGCC.</h4>
 </div>
 &nbsp;
 &nbsp;
