@@ -12,6 +12,10 @@
 #ifndef TIGCC_QT_VIMBACKEND_H
 #define TIGCC_QT_VIMBACKEND_H
 
+class QLabel;
+class QStackedWidget;
+class QTermWidget;
+
 #include "editorbackend.h"
 
 
@@ -79,7 +83,10 @@ public:
 	) override;
 
 private:
+	QStackedWidget *m_stack;
+	QLabel *m_welcomeWidget;
 	QTermWidget *m_terminal;
+	QString m_filePath;
 };
 
 #endif // TIGCC_QT_VIMBACKEND_H
