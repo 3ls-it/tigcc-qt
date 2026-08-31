@@ -29,10 +29,10 @@ For editor component integration, we have written a generic `EditorBackend` API.
 </div>
 &nbsp;
 &nbsp;
-<h4>Changing font size</h4>
+<h4>TIGCC-Qt with Vim</h4>
 &nbsp;
 <div>
-  <img src="https://github.com/3ls-it/tigcc-qt/blob/main/tigcc-qt_alpha-5.png" alt="TIGCC-Qt/QScintilla font size change">
+  <img src="https://github.com/3ls-it/tigcc-qt/blob/main/tigcc-qt_alpha-6.png" alt="TIGCC-Qt running Vim">
 </div>
 &nbsp;
 &nbsp;
