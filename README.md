@@ -14,11 +14,11 @@
 &nbsp;
 &nbsp;
 <p align="center">
-This project is brand new and the current code does not do much yet. Many things are bound to change (possibly a lot!) before we achieve a usable first release.
+This project is very new and the current code does not do much yet. Many things are bound to change (possibly a lot!) before we achieve a usable first release.
 </p>
 
 <p align="center">
-For editor component integration, we have written a generic `EditorBackend` API. Currently there are two editor backends, which are usable and nearly on functional parity. QScintilla will be default for the release version. KTextEditor is used as a reference implementation.
+For editor component integration, we have written a generic `EditorBackend` API. Currently there are two usable editor backends: QScintilla will be default for the release version and KTextEditor as a build-time option. A third editor option is an embedded Vim instance, which is in early stages, but is looking very good.
 </p>
 &nbsp;
 &nbsp;
