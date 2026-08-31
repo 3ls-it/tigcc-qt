@@ -12,11 +12,15 @@
 #include <qtermwidget.h>
 
 #include <QDir>
-#include <QLabel>
+#include <QFile>
 #include <QFileInfo>
 #include <QFont>
+#include <QFileSystemWatcher>
+#include <QLabel>
 #include <QStackedWidget>
+#include <QStandardPaths>
 #include <QStringList>
+#include <QUuid>
 
 #include "vimbackend.h"
 
@@ -28,8 +32,14 @@ VimBackend::VimBackend(
 	: EditorBackend(parent),
 	  m_stack(new QStackedWidget(parent)),
 	  m_welcomeWidget(nullptr),
-	  m_terminal(nullptr)
+	  m_terminal(nullptr),
+	  m_stateFilePath(),
+	  m_stateWatcher(
+		  new QFileSystemWatcher(this)
+	  ),
+	  m_modified(false)
 {
+	// Welcome panel
 	m_welcomeWidget =
 		new QLabel(
 			QStringLiteral(
@@ -56,6 +66,63 @@ VimBackend::VimBackend(
 	m_stack->setCurrentWidget(
 		m_welcomeWidget
 	);
+
+	// set up statFile path
+	const QString temporaryDirectory =
+		QStandardPaths::writableLocation(
+			QStandardPaths::TempLocation
+		);
+
+	m_stateFilePath =
+		QDir(temporaryDirectory).filePath(
+			QStringLiteral(
+				"tigcc-qt-vim-%1.state"
+			).arg(
+				QUuid::createUuid().toString(
+					QUuid::WithoutBraces
+				)
+			)
+		);
+
+	// initial stateFile
+	QFile stateFile(
+		m_stateFilePath
+	);
+
+	if (stateFile.open(
+			QIODevice::WriteOnly |
+			QIODevice::Truncate
+		)) {
+		stateFile.write(
+			"\n0\n"
+		);
+
+		stateFile.close();
+	}
+
+	m_stateWatcher->addPath(
+		m_stateFilePath
+	);
+
+	// and connect
+	connect(
+		m_stateWatcher,
+		&QFileSystemWatcher::fileChanged,
+		this,
+		[this](const QString &path) {
+			if (path == m_stateFilePath) {
+				readVimState();
+
+				if (!m_stateWatcher->files().contains(
+						m_stateFilePath
+					)) {
+					m_stateWatcher->addPath(
+						m_stateFilePath
+					);
+				}
+			}
+		}
+	);
 } // End constructor
 
 
@@ -63,6 +130,100 @@ QWidget *
 VimBackend::widget()
 {
 	return m_stack;
+}
+
+
+QString
+VimBackend::vimStateCommand() const
+{
+	QString stateFilePath =
+		m_stateFilePath;
+
+	stateFilePath.replace(
+		QStringLiteral("'"),
+		QStringLiteral("''")
+	);
+
+	return QStringLiteral(
+		"let g:tigcc_qt_state_file = '%1' | "
+		"augroup TigccQtState | "
+		"autocmd! | "
+		"autocmd BufEnter,BufFilePost,BufWritePost,"
+		"TextChanged,TextChangedI * "
+		"call writefile([expand('%:p'), "
+		"&modified ? '1' : '0'], "
+		"g:tigcc_qt_state_file) | "
+		"autocmd VimLeavePre * "
+		"call writefile(['', '0'], "
+		"g:tigcc_qt_state_file) | "
+		"augroup END"
+	).arg(
+		stateFilePath
+	);
+} // End vimStateCommand
+ 
+
+void
+VimBackend::readVimState()
+{
+	QFile stateFile(
+		m_stateFilePath
+	);
+
+	if (!stateFile.open(
+			QIODevice::ReadOnly
+		)) {
+		return;
+	}
+
+	const QStringList lines =
+		QString::fromUtf8(
+			stateFile.readAll()
+		).split(
+			QChar('\n')
+		);
+
+	stateFile.close();
+
+	if (lines.size() < 2) {
+		return;
+	}
+
+	const QString reportedFilePath =
+		lines.at(0).trimmed();
+
+	const bool reportedModified =
+		lines.at(1).trimmed() ==
+		QStringLiteral("1");
+
+	if (!reportedFilePath.isEmpty()) {
+		m_filePath =
+			QFileInfo(
+				reportedFilePath
+			).absoluteFilePath();
+	}
+
+	m_modified =
+		reportedModified;
+
+	emitCurrentDocumentState();
+} // End readVimState
+
+
+void
+VimBackend::sendVimCommand(
+	const QString &command
+)
+{
+	const QString vim_cmd = QString(QChar(0x1b)) +
+		QString(QChar(0x1b)) +
+		QStringLiteral(":") +
+		command +
+		QStringLiteral("\r");
+
+	m_terminal->sendText(
+		vim_cmd
+	);
 }
 
 
@@ -98,7 +259,23 @@ VimBackend::sendVimEditCommand(
 		QString(QChar(0x1b)) +
 		command
 	);
-}
+} // End sendVimEditCommand
+
+
+void
+VimBackend::handleTerminalFinished()
+{
+	m_terminal =
+		nullptr;
+
+	m_filePath.clear();
+
+	m_stack->setCurrentWidget(
+		m_welcomeWidget
+	);
+
+	emitCurrentDocumentState();
+} // End handleTerminalFinished
 
 
 bool
@@ -111,15 +288,12 @@ VimBackend::openFile(
 		filePath
 	);
 
-	if (!fileInfo.exists() ||
-		!fileInfo.isFile()) {
+	if (!fileInfo.exists() || !fileInfo.isFile()) {
 		if (errorMessage != nullptr) {
 			*errorMessage =
 				QStringLiteral(
 					"The file does not exist:\n%1"
-				).arg(
-					filePath
-				);
+				).arg(filePath);
 		}
 
 		return false;
@@ -130,8 +304,7 @@ VimBackend::openFile(
 		const QString normalizedPath =
 			fileInfo.absoluteFilePath();
 
-		if (normalizedPath ==
-			m_filePath) {
+		if (normalizedPath == m_filePath) {
 			return true;
 		}
 
@@ -146,23 +319,26 @@ VimBackend::openFile(
 			m_terminal
 		);
 
-		emit currentFileChanged(
-			m_filePath
-		);
+		m_modified =
+			false;
 
-		emit modificationChanged(
-			false
-		);
+		emitCurrentDocumentState();
 
 		return true;
 	}
-
 
 	m_terminal =
 		new QTermWidget(
 			0,
 			m_stack
 		);
+
+	connect(
+		m_terminal,
+		&QTermWidget::finished,
+		this,
+		&VimBackend::handleTerminalFinished
+	);
 
 	m_terminal->setWorkingDirectory(
 		fileInfo.absolutePath()
@@ -172,7 +348,16 @@ VimBackend::openFile(
 		QStringLiteral("vim")
 	);
 
+	// First launch
 	QStringList arguments;
+
+	arguments.append(
+		QStringLiteral("--cmd")
+	);
+
+	arguments.append(
+		vimStateCommand()
+	);
 
 	arguments.append(
 		fileInfo.absoluteFilePath()
@@ -199,13 +384,10 @@ VimBackend::openFile(
 		m_terminal
 	);
 
-	emit currentFileChanged(
-		m_filePath
-	);
+	m_modified =
+		false;
 
-	emit modificationChanged(
-		false
-	);
+	emitCurrentDocumentState();
 
 	return true;
 } // End openFile
@@ -216,21 +398,27 @@ VimBackend::saveCurrentFile(
 	QString *errorMessage
 )
 {
-	if (errorMessage != nullptr) {
+	if (errorMessage == nullptr) {
 		*errorMessage =
 			QStringLiteral(
-				"Vim file saving is not implemented yet."
+				"No Vim session is currently active."
 			);
+
+		return false;
 	}
 
-	return false;
+	sendVimCommand(
+		QStringLiteral("write")
+	);
+
+	return true;
 }
 
 
 bool
 VimBackend::hasModifiedFiles() const
 {
-	return false;
+	return m_modified;
 }
 
 
@@ -288,8 +476,34 @@ VimBackend::currentFilePath() const
 bool
 VimBackend::isModified() const
 {
-	return false;
+	return m_modified;
 }
+
+
+void
+VimBackend::emitCurrentDocumentState()
+{
+	if (m_terminal == nullptr ||
+		m_filePath.isEmpty()) {
+		emit currentFileChanged(
+			QString()
+		);
+
+		emit modificationChanged(
+			false
+		);
+
+		return;
+	}
+
+	emit currentFileChanged(
+		m_filePath
+	);
+
+	emit modificationChanged(
+		isModified()
+	);
+} // End emitCurrentDocumentState
 
 
 int

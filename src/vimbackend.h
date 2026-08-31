@@ -20,6 +20,7 @@ class QTermWidget;
 
 
 
+class QFileSystemWatcher;
 class QTermWidget;
 class QWidget;
 
@@ -84,14 +85,37 @@ public:
 
 private:
 	void
+	emitCurrentDocumentState();
+
+	QString
+	vimStateCommand() const;
+
+	void
+	readVimState();
+
+	void
+	handleTerminalFinished();
+
+	void
 	sendVimEditCommand(
 		const QString &filePath
 	);
+
+	void
+	sendVimCommand(
+		const QString &command
+	);
+
+	void
+	updateVimState();
 
 	QStackedWidget *m_stack;
 	QLabel *m_welcomeWidget;
 	QTermWidget *m_terminal;
 	QString m_filePath;
+	QString m_stateFilePath;
+	QFileSystemWatcher *m_stateWatcher;
+	bool m_modified;
 };
 
 #endif // TIGCC_QT_VIMBACKEND_H
