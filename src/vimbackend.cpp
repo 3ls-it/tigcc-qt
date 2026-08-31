@@ -66,6 +66,41 @@ VimBackend::widget()
 }
 
 
+void
+VimBackend::sendVimEditCommand(
+	const QString &filePath
+)
+{
+	if (m_terminal == nullptr) {
+		return;
+	}
+
+	QString vimPath =
+		filePath;
+
+	/*
+	 * Vim's single-quoted strings represent a literal
+	 * quote by doubling it.
+	 */
+	vimPath.replace(
+		QStringLiteral("'"),
+		QStringLiteral("''")
+	);
+
+	const QString command =
+		QStringLiteral(
+			":execute 'edit ' . fnameescape('%1')\r"
+		).arg(
+			vimPath
+		);
+
+	m_terminal->sendText(
+		QString(QChar(0x1b)) +
+		command
+	);
+}
+
+
 bool
 VimBackend::openFile(
 	const QString &filePath,
@@ -90,16 +125,38 @@ VimBackend::openFile(
 		return false;
 	}
 
+
 	if (m_terminal != nullptr) {
-		if (errorMessage != nullptr) {
-			*errorMessage =
-				QStringLiteral(
-					"A Vim session is already active."
-				);
+		const QString normalizedPath =
+			fileInfo.absoluteFilePath();
+
+		if (normalizedPath ==
+			m_filePath) {
+			return true;
 		}
 
-		return false;
+		sendVimEditCommand(
+			normalizedPath
+		);
+
+		m_filePath =
+			normalizedPath;
+
+		m_stack->setCurrentWidget(
+			m_terminal
+		);
+
+		emit currentFileChanged(
+			m_filePath
+		);
+
+		emit modificationChanged(
+			false
+		);
+
+		return true;
 	}
+
 
 	m_terminal =
 		new QTermWidget(

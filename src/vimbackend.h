@@ -83,6 +83,11 @@ public:
 	) override;
 
 private:
+	void
+	sendVimEditCommand(
+		const QString &filePath
+	);
+
 	QStackedWidget *m_stack;
 	QLabel *m_welcomeWidget;
 	QTermWidget *m_terminal;
