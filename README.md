@@ -18,7 +18,7 @@ This project is very new and the current code does not do much yet. Many things 
 </p>
 
 <p align="center">
-For editor component integration, we have written a generic `EditorBackend` API. Currently there are two usable editor backends: QScintilla will be default for the release version and KTextEditor as a build-time option. A third editor option is an embedded Vim instance, which is in early stages, but is looking very good.
+For editor component integration, we have written a generic `EditorBackend` API. Currently there are three usable editor backends: QScintilla will be default for the release version and KTextEditor as a build-time option. The third editor option is an embedded Vim instance, which is in early stages, but is looking very good.
 </p>
 &nbsp;
 &nbsp;
