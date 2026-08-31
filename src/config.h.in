@@ -1,0 +1,17 @@
+/*
+ * @file    config.h
+ * @brief   Build time defines
+ *
+ * This file is part of TIGCC-Qt.
+ *
+ * Copyright (c) 2026 J Adams <jfa63@duck.com>
+ *
+ * SPDX-License-Identifier: BSD-2-Clause
+ */
+
+#ifndef CONFIG_H_IN
+#define CONFIG_H_IN
+
+#cmakedefine USE_KTEXTEDITOR
+
+#endif // CONFIG_H_IN

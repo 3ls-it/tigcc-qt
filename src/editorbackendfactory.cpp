@@ -9,6 +9,8 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include "config.h"
+
 #include "editorbackendfactory.h"
 
 #include "editorbackend.h"
@@ -29,18 +31,16 @@ createEditorBackend(
 			return new QScintillaBackend(
 				parent
 			);
-
-
 		case EditorBackendType::Vim:
 			return new VimBackend(
 				parent
 			);
-
+#ifdef USE_KTEXTEDITOR
 		case EditorBackendType::KTextEditor:
 			return new KTextEditorBackend(
 				parent
 			);
-	}
-
+#endif
+        }
 	return nullptr;
 }

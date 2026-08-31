@@ -26,6 +26,7 @@
 #include <QStatusBar>
 #include <QCloseEvent>
 
+#include "config.h"
 #include "mainwindow.h"
 #include "buildoutputwidget.h"
 #include "editorbackend.h"
@@ -54,7 +55,9 @@ MainWindow::MainWindow(QWidget *parent)
 		  EditorBackendType::QScintilla
 	  ),
 	  qscintillaBackendAction(nullptr),
+#ifdef USE_KTEXTEDITOR
 	  ktextEditorBackendAction(nullptr),
+#endif
 	  saveFileAction(nullptr)
 {
     setWindowTitle(
@@ -266,7 +269,8 @@ MainWindow::MainWindow(QWidget *parent)
 		vimBackendAction
 	);
 
-	// Kate
+#ifdef USE_KTEXTEDITOR
+  // Kate
 	ktextEditorBackendAction =
 		editorBackendMenu->addAction(
 			QStringLiteral("KTextEditor")
@@ -279,16 +283,19 @@ MainWindow::MainWindow(QWidget *parent)
 	editorBackendActionGroup->addAction(
 		ktextEditorBackendAction
 	);
+#endif
 
 	qscintillaBackendAction->setChecked(
 		editorBackendType ==
 		EditorBackendType::QScintilla
 	);
 
+#ifdef USE_KTEXTEDITOR
 	ktextEditorBackendAction->setChecked(
 		editorBackendType ==
 		EditorBackendType::KTextEditor
 	);
+#endif
 
 	// Conect the backends
 	connect(
@@ -313,6 +320,7 @@ MainWindow::MainWindow(QWidget *parent)
 		}
 	);
 
+#ifdef USE_KTEXTEDITOR
 	connect(
 		ktextEditorBackendAction,
 		&QAction::triggered,
@@ -323,6 +331,7 @@ MainWindow::MainWindow(QWidget *parent)
 			);
 		}
 	);
+#endif
 
 	auto *editorFontSizeMenu =
 		viewMenu->addMenu(
@@ -538,7 +547,6 @@ MainWindow::updateEditorBackendActions()
 		);
 	}
 
-
 	if (vimBackendAction != nullptr) {
 		vimBackendAction->setChecked(
 			editorBackendType ==
@@ -546,12 +554,14 @@ MainWindow::updateEditorBackendActions()
 		);
 	}
 
+#ifdef USE_KTEXTEDITOR
 	if (ktextEditorBackendAction != nullptr) {
 		ktextEditorBackendAction->setChecked(
 			editorBackendType ==
 			EditorBackendType::KTextEditor
 		);
 	}
+#endif
 } // End updateEditorBackendActions
 
 
