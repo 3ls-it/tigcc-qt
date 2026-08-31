@@ -4,7 +4,7 @@ set(
     QScintilla_INCLUDE_SEARCH_PATHS
     /usr/local/include
     /usr/include
-    /data/data/com.termux/files/usr/include
+	${PREFIX}/include
 )
 
 set(
