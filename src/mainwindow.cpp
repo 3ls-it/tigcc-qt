@@ -80,7 +80,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     rightSplitter->setStretchFactor(0, 4);
     rightSplitter->setStretchFactor(1, 1);
-	rightSplitter->setSizes({644, 185});
+	rightSplitter->setSizes({634, 195});
 
 	editor->widget()->setMinimumHeight(160);
 	buildOutput->setMinimumHeight(80);

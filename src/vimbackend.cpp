@@ -25,6 +25,8 @@
 
 #include "vimbackend.h"
 
+#include <QDebug>
+
 
 
 VimBackend::VimBackend(
@@ -41,7 +43,8 @@ VimBackend::VimBackend(
 	  m_modified(false),
 	  m_fontPointSize(
 		  QApplication::font().pointSize()
-	  )
+	  ),
+	  m_lastVimEvent()
 {
 	// Welcome panel
 	m_welcomeWidget =
@@ -103,7 +106,7 @@ VimBackend::VimBackend(
 			QIODevice::Truncate
 		)) {
 		stateFile.write(
-			"\n0\n"
+			"\n0\nstate\n"
 		);
 
 		stateFile.close();
@@ -157,13 +160,17 @@ VimBackend::vimStateCommand() const
 		"let g:tigcc_qt_state_file = '%1' | "
 		"augroup TigccQtState | "
 		"autocmd! | "
-		"autocmd BufEnter,BufFilePost,BufWritePost,"
+		"autocmd BufEnter,BufFilePost,"
 		"TextChanged,TextChangedI * "
-		"call writefile([expand('%:p'), "
-		"&modified ? '1' : '0'], "
+		"call writefile([expand('%%:p'), "
+		"&modified ? '1' : '0', 'state'], "
+		"g:tigcc_qt_state_file) | "
+		"autocmd BufWritePost * "
+		"call writefile([expand('%%:p'), "
+		"&modified ? '1' : '0', 'write'], "
 		"g:tigcc_qt_state_file) | "
 		"autocmd VimLeavePre * "
-		"call writefile(['', '0'], "
+		"call writefile(['', '0', 'exit'], "
 		"g:tigcc_qt_state_file) | "
 		"augroup END"
 	).arg(
@@ -194,7 +201,7 @@ VimBackend::readVimState()
 
 	stateFile.close();
 
-	if (lines.size() < 2) {
+	if (lines.size() < 3) {
 		return;
 	}
 
@@ -205,6 +212,9 @@ VimBackend::readVimState()
 		lines.at(1).trimmed() ==
 		QStringLiteral("1");
 
+	const QString reportedEvent =
+		lines.at(2).trimmed();
+
 	if (!reportedFilePath.isEmpty()) {
 		m_filePath =
 			QFileInfo(
@@ -214,6 +224,17 @@ VimBackend::readVimState()
 
 	m_modified =
 		reportedModified;
+
+	m_lastVimEvent =
+		reportedEvent;
+	//Debug
+	qDebug()
+		<< "Vim state event:"
+		<< m_lastVimEvent
+		<< "modified:"
+		<< m_modified
+		<< "file:"
+		<< m_filePath;
 
 	emitCurrentDocumentState();
 } // End readVimState

@@ -116,6 +116,7 @@ private:
 	QString m_stateFilePath;
 	QFileSystemWatcher *m_stateWatcher;
 	bool m_modified;
+	QString m_lastVimEvent;
 	int m_fontPointSize;
 };
 
