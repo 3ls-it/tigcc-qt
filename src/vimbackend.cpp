@@ -11,6 +11,7 @@
 
 #include <qtermwidget.h>
 
+#include <QApplication>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -37,7 +38,10 @@ VimBackend::VimBackend(
 	  m_stateWatcher(
 		  new QFileSystemWatcher(this)
 	  ),
-	  m_modified(false)
+	  m_modified(false),
+	  m_fontPointSize(
+		  QApplication::font().pointSize()
+	  )
 {
 	// Welcome panel
 	m_welcomeWidget =
@@ -66,6 +70,11 @@ VimBackend::VimBackend(
 	m_stack->setCurrentWidget(
 		m_welcomeWidget
 	);
+
+	// Ensure default font size as minimum
+	if (m_fontPointSize <= 0) {
+		m_fontPointSize = 10;
+	}
 
 	// set up statFile path
 	const QString temporaryDirectory =
@@ -333,6 +342,18 @@ VimBackend::openFile(
 			m_stack
 		);
 
+	// Apply font
+	QFont terminalFont =
+		m_terminal->getTerminalFont();
+
+	terminalFont.setPointSize(
+		m_fontPointSize
+	);
+
+	m_terminal->setTerminalFont(
+		terminalFont
+	);
+
 	connect(
 		m_terminal,
 		&QTermWidget::finished,
@@ -509,7 +530,7 @@ VimBackend::emitCurrentDocumentState()
 int
 VimBackend::fontPointSize() const
 {
-	return 10;
+	return m_fontPointSize;
 }
 
 
@@ -519,15 +540,42 @@ VimBackend::setFontPointSize(
 	QString *errorMessage
 )
 {
-	Q_UNUSED(pointSize);
+	if (pointSize < 6 ||
+		pointSize > 36) {
+		if (errorMessage != nullptr) {
+			*errorMessage =
+				QStringLiteral(
+					"Font size must be between "
+					"6 and 36 points."
+				);
+		}
 
-	if (errorMessage != nullptr) {
-		*errorMessage =
-			QStringLiteral(
-				"Font-size changes are not implemented "
-				"for the Vim backend."
-			);
+		return false;
 	}
 
-	return false;
-}
+	if (pointSize == m_fontPointSize) {
+		return true;
+	}
+
+	m_fontPointSize =
+		pointSize;
+
+	if (m_terminal != nullptr) {
+		QFont terminalFont =
+			m_terminal->getTerminalFont();
+
+		terminalFont.setPointSize(
+			m_fontPointSize
+		);
+
+		m_terminal->setTerminalFont(
+			terminalFont
+		);
+	}
+
+	emit fontPointSizeChanged(
+		m_fontPointSize
+	);
+
+	return true;
+} // End setFontPointSize

@@ -116,6 +116,7 @@ private:
 	QString m_stateFilePath;
 	QFileSystemWatcher *m_stateWatcher;
 	bool m_modified;
+	int m_fontPointSize;
 };
 
 #endif // TIGCC_QT_VIMBACKEND_H
