@@ -13,6 +13,7 @@
 
 #include <QApplication>
 #include <QDir>
+#include <QEventLoop>
 #include <QFile>
 #include <QFileInfo>
 #include <QFont>
@@ -21,11 +22,10 @@
 #include <QStackedWidget>
 #include <QStandardPaths>
 #include <QStringList>
+#include <QTimer>
 #include <QUuid>
 
 #include "vimbackend.h"
-
-#include <QDebug>
 
 
 
@@ -44,7 +44,10 @@ VimBackend::VimBackend(
 	  m_fontPointSize(
 		  QApplication::font().pointSize()
 	  ),
-	  m_lastVimEvent()
+	  m_lastVimEvent(),
+	  m_saveLoop(nullptr),
+	  m_savePending(false),
+	  m_saveSucceeded(false)
 {
 	// Welcome panel
 	m_welcomeWidget =
@@ -227,14 +230,20 @@ VimBackend::readVimState()
 
 	m_lastVimEvent =
 		reportedEvent;
-	//Debug
-	qDebug()
-		<< "Vim state event:"
-		<< m_lastVimEvent
-		<< "modified:"
-		<< m_modified
-		<< "file:"
-		<< m_filePath;
+
+	if (m_lastVimEvent ==
+			QStringLiteral("write") &&
+		m_savePending) {
+		m_savePending =
+			false;
+
+		m_saveSucceeded =
+			true;
+
+		if (m_saveLoop != nullptr) {
+			m_saveLoop->quit();
+		}
+	}
 
 	emitCurrentDocumentState();
 } // End readVimState
@@ -245,7 +254,7 @@ VimBackend::sendVimCommand(
 	const QString &command
 )
 {
-	const QString vim_cmd = QString(QChar(0x1b)) +
+	const QString vim_cmd =
 		QString(QChar(0x1b)) +
 		QStringLiteral(":") +
 		command +
@@ -440,21 +449,71 @@ VimBackend::saveCurrentFile(
 	QString *errorMessage
 )
 {
-	if (errorMessage == nullptr) {
-		*errorMessage =
-			QStringLiteral(
-				"No Vim session is currently active."
-			);
+	if (m_terminal == nullptr) {
+		if (errorMessage != nullptr) {
+			*errorMessage =
+				QStringLiteral(
+					"No Vim session is currently active."
+				);
+		}
 
 		return false;
 	}
+
+	QEventLoop saveLoop;
+
+	m_saveLoop =
+		&saveLoop;
+
+	m_savePending =
+		true;
+
+	m_saveSucceeded =
+		false;
 
 	sendVimCommand(
 		QStringLiteral("write")
 	);
 
+	QTimer timeoutTimer;
+
+	timeoutTimer.setSingleShot(
+		true
+	);
+
+	connect(
+		&timeoutTimer,
+		&QTimer::timeout,
+		&saveLoop,
+		&QEventLoop::quit
+	);
+
+	timeoutTimer.start(
+		5000
+	);
+
+	saveLoop.exec();
+
+	m_saveLoop =
+		nullptr;
+
+	if (!m_saveSucceeded) {
+		m_savePending =
+			false;
+
+		if (errorMessage != nullptr) {
+			*errorMessage =
+				QStringLiteral(
+					"Vim did not confirm that "
+					"the file was saved."
+				);
+		}
+
+		return false;
+	}
+
 	return true;
-}
+} // End saveCurrentFile
 
 
 bool

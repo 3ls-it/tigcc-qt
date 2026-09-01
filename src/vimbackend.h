@@ -12,15 +12,14 @@
 #ifndef TIGCC_QT_VIMBACKEND_H
 #define TIGCC_QT_VIMBACKEND_H
 
-class QLabel;
-class QStackedWidget;
-class QTermWidget;
-
 #include "editorbackend.h"
 
 
 
+class QEventLoop;
 class QFileSystemWatcher;
+class QLabel;
+class QStackedWidget;
 class QTermWidget;
 class QWidget;
 
@@ -118,6 +117,9 @@ private:
 	bool m_modified;
 	QString m_lastVimEvent;
 	int m_fontPointSize;
+	QEventLoop *m_saveLoop;
+	bool m_savePending;
+	bool m_saveSucceeded;
 };
 
 #endif // TIGCC_QT_VIMBACKEND_H
