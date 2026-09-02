@@ -39,6 +39,7 @@ VimBackend::VimBackend(
 	  m_welcomeWidget(nullptr),
 	  m_terminal(nullptr),
 	  m_stateFilePath(),
+	  m_saveAckFilePath(),
 	  m_stateWatcher(
 		  new QFileSystemWatcher(this)
 	  ),
@@ -94,7 +95,7 @@ VimBackend::VimBackend(
 		m_fontPointSize = 10;
 	}
 
-	// set up statFile path
+	// set up stateFile path
 	const QString temporaryDirectory =
 		QStandardPaths::writableLocation(
 			QStandardPaths::TempLocation
@@ -110,6 +111,10 @@ VimBackend::VimBackend(
 				)
 			)
 		);
+
+	m_saveAckFilePath =
+		m_stateFilePath +
+		QStringLiteral(".write");
 
 	// initial stateFile
 	QFile stateFile(
@@ -127,8 +132,23 @@ VimBackend::VimBackend(
 		stateFile.close();
 	}
 
+	QFile saveAckFile(
+		m_saveAckFilePath
+	);
+
+	if (saveAckFile.open(
+			QIODevice::WriteOnly |
+			QIODevice::Truncate
+		)) {
+		saveAckFile.close();
+	}
+
 	m_stateWatcher->addPath(
 		m_stateFilePath
+	);
+
+	m_stateWatcher->addPath(
+		m_saveAckFilePath
 	);
 
 	// and connect
@@ -145,6 +165,18 @@ VimBackend::VimBackend(
 					)) {
 					m_stateWatcher->addPath(
 						m_stateFilePath
+					);
+				}
+			}
+
+			if (path == m_saveAckFilePath) {
+				readVimSaveAcknowledgement();
+
+				if (!m_stateWatcher->files().contains(
+						m_saveAckFilePath
+					)) {
+					m_stateWatcher->addPath(
+						m_saveAckFilePath
 					);
 				}
 			}
@@ -171,30 +203,39 @@ VimBackend::vimStateCommand() const
 		QStringLiteral("''")
 	);
 
+	QString saveAckFilePath =
+		m_saveAckFilePath;
+
+	saveAckFilePath.replace(
+		QStringLiteral("'"),
+		QStringLiteral("''")
+	);
+
 	// Construct a Vimscript string
 	return QStringLiteral(
 		"let g:tigcc_qt_state_file = '%1' | "
+		"let g:tigcc_qt_save_ack_file = '%2' | "
 		"augroup TigccQtState | "
 		"autocmd! | "
 		"autocmd BufEnter,BufFilePost,"
 		"TextChanged,TextChangedI * "
-		"call writefile([expand('%%:p'), "
+		"call writefile([expand('%:p'), "
 		"&modified ? '1' : '0', 'state'], "
 		"g:tigcc_qt_state_file) | "
 		"autocmd BufReadPost * "
-		"call writefile([expand('%%:p'), "
+		"call writefile([expand('%:p'), "
 		"&modified ? '1' : '0', 'discard'], "
 		"g:tigcc_qt_state_file) | "
 		"autocmd BufWritePost * "
-		"call writefile([expand('%%:p'), "
-		"&modified ? '1' : '0', 'write'], "
-		"g:tigcc_qt_state_file) | "
+		"call writefile([expand('%:p'), 'write'], "
+		"g:tigcc_qt_save_ack_file) | "
 		"autocmd VimLeavePre * "
 		"call writefile(['', '0', 'exit'], "
 		"g:tigcc_qt_state_file) | "
 		"augroup END"
 	).arg(
-		stateFilePath
+		stateFilePath,
+		saveAckFilePath
 	);
 } // End vimStateCommand
  
@@ -212,9 +253,19 @@ VimBackend::readVimState()
 		return;
 	}
 
+	// Debug file path
+	const QByteArray stateData =
+		stateFile.readAll();
+
+	qDebug()
+		<< "Raw Vim state data:"
+		<< stateData;
+	//
+
+
 	const QStringList lines =
 		QString::fromUtf8(
-			stateFile.readAll()
+			stateData
 		).split(
 			QChar('\n')
 		);
@@ -321,6 +372,79 @@ VimBackend::readVimState()
 
 	emitCurrentDocumentState();
 } // End readVimState
+
+
+void
+VimBackend::readVimSaveAcknowledgement()
+{
+	QFile saveAckFile(
+		m_saveAckFilePath
+	);
+
+	if (!saveAckFile.open(
+			QIODevice::ReadOnly
+		)) {
+		return;
+	}
+
+	const QStringList lines =
+		QString::fromUtf8(
+			saveAckFile.readAll()
+		).split(
+			QChar('\n')
+		);
+
+	saveAckFile.close();
+
+	if (lines.size() < 2) {
+		return;
+	}
+
+	const QString reportedFilePath =
+		lines.at(0).trimmed();
+
+	const QString reportedEvent =
+		lines.at(1).trimmed();
+
+	if (reportedEvent !=
+		QStringLiteral("write")) {
+		return;
+	}
+
+	if (!m_savePending) {
+		return;
+	}
+
+	const QString normalizedReportedPath =
+		QFileInfo(
+			reportedFilePath
+		).absoluteFilePath();
+
+	const QString normalizedCurrentPath =
+		QFileInfo(
+			m_filePath
+		).absoluteFilePath();
+
+	if (normalizedReportedPath !=
+		normalizedCurrentPath) {
+		return;
+	}
+
+	m_savePending =
+		false;
+
+	m_saveSucceeded =
+		true;
+
+	m_modified =
+		false;
+
+	if (m_saveLoop != nullptr) {
+		m_saveLoop->quit();
+	}
+
+	emitCurrentDocumentState();
+} // End readVimSaveAcknowledgement
 
 
 void
@@ -545,6 +669,23 @@ VimBackend::openFile(
 	arguments.append(
 		fileInfo.absoluteFilePath()
 	);
+	// Debug file path
+	qDebug()
+		<< "Vim working directory:"
+		<< fileInfo.absolutePath();
+
+	qDebug()
+		<< "Vim file argument:"
+		<< fileInfo.absoluteFilePath();
+
+	qDebug()
+		<< "Vim state command:"
+		<< vimStateCommand();
+
+	qDebug()
+		<< "Vim arguments:"
+		<< arguments;
+	//
 
 	m_terminal->setArgs(
 		arguments
@@ -594,6 +735,12 @@ VimBackend::saveCurrentFile(
 
 	QEventLoop saveLoop;
 
+	QTimer timeoutTimer;
+
+	timeoutTimer.setSingleShot(
+		true
+	);
+
 	m_saveLoop =
 		&saveLoop;
 
@@ -603,15 +750,26 @@ VimBackend::saveCurrentFile(
 	m_saveSucceeded =
 		false;
 
-	sendVimCommand(
-		QStringLiteral("write")
+	QFile saveAckFile(
+		m_saveAckFilePath
 	);
 
-	QTimer timeoutTimer;
+	if (!saveAckFile.open(
+			QIODevice::WriteOnly |
+			QIODevice::Truncate
+		)) {
+		if (errorMessage != nullptr) {
+			*errorMessage =
+				saveAckFile.errorString();
+		}
 
-	timeoutTimer.setSingleShot(
-		true
-	);
+		m_savePending =
+			false;
+
+		return false;
+	}
+
+	saveAckFile.close();
 
 	connect(
 		&timeoutTimer,
@@ -622,6 +780,15 @@ VimBackend::saveCurrentFile(
 
 	timeoutTimer.start(
 		5000
+	);
+
+	/*
+	 * The wait loop and timeout must be ready before
+	 * sending :write, otherwise the BufWritePost
+	 * acknowledgement can be missed.
+	 */
+	sendVimCommand(
+		QStringLiteral("write")
 	);
 
 	saveLoop.exec();
@@ -638,7 +805,7 @@ VimBackend::saveCurrentFile(
 				QStringLiteral(
 					"Vim did not confirm that "
 					"the file was saved."
-				);
+			);
 		}
 
 		return false;

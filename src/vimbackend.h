@@ -93,6 +93,9 @@ private:
 	readVimState();
 
 	void
+	readVimSaveAcknowledgement();
+
+	void
 	handleTerminalFinished();
 
 	void
@@ -113,6 +116,7 @@ private:
 	QTermWidget *m_terminal;
 	QString m_filePath;
 	QString m_stateFilePath;
+	QString m_saveAckFilePath;
 	QFileSystemWatcher *m_stateWatcher;
 	bool m_modified;
 	QString m_lastVimEvent;
