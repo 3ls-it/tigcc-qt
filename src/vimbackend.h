@@ -120,6 +120,16 @@ private:
 	QEventLoop *m_saveLoop;
 	bool m_savePending;
 	bool m_saveSucceeded;
+	QEventLoop *m_editLoop;
+	bool m_editPending;
+	bool m_editSucceeded;
+	QEventLoop *m_discardLoop;
+	bool m_discardPending;
+	bool m_discardSucceeded;
+	QEventLoop *m_closeLoop;
+	bool m_closePending;
+	bool m_closeSucceeded;
+	QString m_pendingFilePath;
 };
 
 #endif // TIGCC_QT_VIMBACKEND_H

@@ -27,6 +27,8 @@
 
 #include "vimbackend.h"
 
+#include <QDebug>
+
 
 
 VimBackend::VimBackend(
@@ -47,7 +49,17 @@ VimBackend::VimBackend(
 	  m_lastVimEvent(),
 	  m_saveLoop(nullptr),
 	  m_savePending(false),
-	  m_saveSucceeded(false)
+	  m_saveSucceeded(false),
+	  m_editLoop(nullptr),
+	  m_editPending(false),
+	  m_editSucceeded(false),
+	  m_discardLoop(nullptr),
+	  m_discardPending(false),
+	  m_discardSucceeded(false),
+	  m_closeLoop(nullptr),
+	  m_closePending(false),
+	  m_closeSucceeded(false),
+	  m_pendingFilePath()
 {
 	// Welcome panel
 	m_welcomeWidget =
@@ -159,6 +171,7 @@ VimBackend::vimStateCommand() const
 		QStringLiteral("''")
 	);
 
+	// Construct a Vimscript string
 	return QStringLiteral(
 		"let g:tigcc_qt_state_file = '%1' | "
 		"augroup TigccQtState | "
@@ -167,6 +180,10 @@ VimBackend::vimStateCommand() const
 		"TextChanged,TextChangedI * "
 		"call writefile([expand('%%:p'), "
 		"&modified ? '1' : '0', 'state'], "
+		"g:tigcc_qt_state_file) | "
+		"autocmd BufReadPost * "
+		"call writefile([expand('%%:p'), "
+		"&modified ? '1' : '0', 'discard'], "
 		"g:tigcc_qt_state_file) | "
 		"autocmd BufWritePost * "
 		"call writefile([expand('%%:p'), "
@@ -218,6 +235,43 @@ VimBackend::readVimState()
 	const QString reportedEvent =
 		lines.at(2).trimmed();
 
+	const QString normalizedReportedPath =
+		reportedFilePath.isEmpty()
+			? QString()
+			: QFileInfo(
+				reportedFilePath
+			).absoluteFilePath();
+
+	if (m_editPending) {
+		if (normalizedReportedPath !=
+			m_pendingFilePath) {
+			return;
+		}
+
+		m_filePath =
+			normalizedReportedPath;
+
+		m_modified =
+			reportedModified;
+
+		m_lastVimEvent =
+			reportedEvent;
+
+		m_editPending =
+			false;
+
+		m_editSucceeded =
+			true;
+
+		if (m_editLoop != nullptr) {
+			m_editLoop->quit();
+		}
+
+		emitCurrentDocumentState();
+
+		return;
+	}
+
 	if (!reportedFilePath.isEmpty()) {
 		m_filePath =
 			QFileInfo(
@@ -231,6 +285,7 @@ VimBackend::readVimState()
 	m_lastVimEvent =
 		reportedEvent;
 
+	// Acknowlege pending save
 	if (m_lastVimEvent ==
 			QStringLiteral("write") &&
 		m_savePending) {
@@ -242,6 +297,25 @@ VimBackend::readVimState()
 
 		if (m_saveLoop != nullptr) {
 			m_saveLoop->quit();
+		}
+	}
+
+	// Acknowledge pending discard
+	if (m_discardPending &&
+		m_lastVimEvent ==
+			QStringLiteral("discard") &&
+		!reportedModified) {
+		m_modified =
+			false;
+
+		m_discardPending =
+			false;
+
+		m_discardSucceeded =
+			true;
+
+		if (m_discardLoop != nullptr) {
+			m_discardLoop->quit();
 		}
 	}
 
@@ -313,6 +387,18 @@ VimBackend::handleTerminalFinished()
 		m_welcomeWidget
 	);
 
+	if (m_closePending) {
+		m_closePending =
+			false;
+
+		m_closeSucceeded =
+			true;
+
+		if (m_closeLoop != nullptr) {
+			m_closeLoop->quit();
+		}
+	}
+
 	emitCurrentDocumentState();
 } // End handleTerminalFinished
 
@@ -338,7 +424,6 @@ VimBackend::openFile(
 		return false;
 	}
 
-
 	if (m_terminal != nullptr) {
 		const QString normalizedPath =
 			fileInfo.absoluteFilePath();
@@ -347,21 +432,68 @@ VimBackend::openFile(
 			return true;
 		}
 
+		QEventLoop editLoop;
+
+		QTimer timeoutTimer;
+
+		timeoutTimer.setSingleShot(
+			true
+		);
+
+		m_pendingFilePath =
+			normalizedPath;
+
+		m_editLoop =
+			&editLoop;
+
+		m_editPending =
+			true;
+
+		m_editSucceeded =
+			false;
+
+		connect(
+			&timeoutTimer,
+			&QTimer::timeout,
+			&editLoop,
+			&QEventLoop::quit
+		);
+
+		timeoutTimer.start(
+			5000
+		);
+
 		sendVimEditCommand(
 			normalizedPath
 		);
 
-		m_filePath =
-			normalizedPath;
+		editLoop.exec();
+
+		m_editLoop =
+			nullptr;
+
+		if (!m_editSucceeded) {
+			m_editPending =
+				false;
+
+			m_pendingFilePath.clear();
+
+			if (errorMessage != nullptr) {
+				*errorMessage =
+					QStringLiteral(
+						"Vim did not confirm that "
+						"the requested file was opened."
+					);
+			}
+
+			return false;
+		}
+
+		m_pendingFilePath.clear();
 
 		m_stack->setCurrentWidget(
 			m_terminal
 		);
-
-		m_modified =
-			false;
-
-		emitCurrentDocumentState();
 
 		return true;
 	}
@@ -519,6 +651,14 @@ VimBackend::saveCurrentFile(
 bool
 VimBackend::hasModifiedFiles() const
 {
+	qDebug()
+		<< "VimBackend::hasModifiedFiles():"
+		<< m_modified
+		<< "file:"
+		<< m_filePath
+		<< "event:"
+		<< m_lastVimEvent;
+
 	return m_modified;
 }
 
@@ -528,10 +668,19 @@ VimBackend::saveAllFiles(
 	QString *errorMessage
 )
 {
-	Q_UNUSED(errorMessage);
+	if (m_terminal == nullptr ||
+		m_filePath.isEmpty()) {
+		return true;
+	}
 
-	return true;
-}
+	if (!m_modified) {
+		return true;
+	}
+
+	return saveCurrentFile(
+		errorMessage
+	);
+} // End saveAllFiles
 
 
 bool
@@ -539,10 +688,68 @@ VimBackend::discardAllChanges(
 	QString *errorMessage
 )
 {
-	Q_UNUSED(errorMessage);
+	if (m_terminal == nullptr ||
+		m_filePath.isEmpty() ||
+		!m_modified) {
+		return true;
+	}
+
+	QEventLoop discardLoop;
+
+	QTimer timeoutTimer;
+
+	timeoutTimer.setSingleShot(
+		true
+	);
+
+	m_discardLoop =
+		&discardLoop;
+
+	m_discardPending =
+		true;
+
+	m_discardSucceeded =
+		false;
+
+	connect(
+		&timeoutTimer,
+		&QTimer::timeout,
+		&discardLoop,
+		&QEventLoop::quit
+	);
+
+	timeoutTimer.start(
+		5000
+	);
+
+	sendVimCommand(
+		QStringLiteral("edit!")
+	);
+
+	discardLoop.exec();
+
+	m_discardLoop =
+		nullptr;
+
+	if (!m_discardSucceeded) {
+		m_discardPending =
+			false;
+
+		if (errorMessage != nullptr) {
+			*errorMessage =
+				QStringLiteral(
+					"Vim did not confirm that "
+					"changes were discarded."
+				);
+		}
+
+		return false;
+	}
+
+	emitCurrentDocumentState();
 
 	return true;
-}
+} // End discardAllChanges
 
 
 bool
@@ -550,10 +757,77 @@ VimBackend::closeCurrentFile(
 	QString *errorMessage
 )
 {
-	Q_UNUSED(errorMessage);
+	if (m_terminal == nullptr ||
+		m_filePath.isEmpty()) {
+		return true;
+	}
+
+	if (m_modified) {
+		if (errorMessage != nullptr) {
+			*errorMessage =
+				QStringLiteral(
+					"The current file has "
+					"unsaved changes."
+				);
+		}
+
+		return false;
+	}
+
+	QEventLoop closeLoop;
+
+	QTimer timeoutTimer;
+
+	timeoutTimer.setSingleShot(
+		true
+	);
+
+	m_closeLoop =
+		&closeLoop;
+
+	m_closePending =
+		true;
+
+	m_closeSucceeded =
+		false;
+
+	connect(
+		&timeoutTimer,
+		&QTimer::timeout,
+		&closeLoop,
+		&QEventLoop::quit
+	);
+
+	timeoutTimer.start(
+		5000
+	);
+
+	sendVimCommand(
+		QStringLiteral("quit")
+	);
+
+	closeLoop.exec();
+
+	m_closeLoop =
+		nullptr;
+
+	if (!m_closeSucceeded) {
+		m_closePending =
+			false;
+
+		if (errorMessage != nullptr) {
+			*errorMessage =
+				QStringLiteral(
+					"Vim did not confirm that "
+					"the session closed."
+				);
+		}
+
+		return false;
+	}
 
 	return true;
-}
+} // End closeCurrentFile
 
 
 bool
