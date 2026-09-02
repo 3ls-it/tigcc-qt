@@ -217,21 +217,36 @@ VimBackend::vimStateCommand() const
 		"let g:tigcc_qt_save_ack_file = '%2' | "
 		"augroup TigccQtState | "
 		"autocmd! | "
-		"autocmd BufEnter,BufFilePost,"
-		"TextChanged,TextChangedI * "
+
+		"execute \"autocmd "
+		"BufEnter,BufFilePost,TextChanged,TextChangedI * "
 		"call writefile([expand('%:p'), "
 		"&modified ? '1' : '0', 'state'], "
-		"g:tigcc_qt_state_file) | "
-		"autocmd BufReadPost * "
+		"g:tigcc_qt_state_file)\" | "
+
+		"execute \"autocmd "
+		"BufReadPost * "
 		"call writefile([expand('%:p'), "
 		"&modified ? '1' : '0', 'discard'], "
-		"g:tigcc_qt_state_file) | "
-		"autocmd BufWritePost * "
-		"call writefile([expand('%:p'), 'write'], "
-		"g:tigcc_qt_save_ack_file) | "
-		"autocmd VimLeavePre * "
+		"g:tigcc_qt_state_file)\" | "
+
+		"execute \"autocmd "
+		"BufWritePost * "
+		"call writefile([expand('%:p'), "
+		"&modified ? '1' : '0', 'state'], "
+		"g:tigcc_qt_state_file)\" | "
+
+		"execute \"autocmd "
+		"BufWritePost * "
+		"call writefile([expand('%:p'), "
+		"'write'], "
+		"g:tigcc_qt_save_ack_file)\" | "
+
+		"execute \"autocmd "
+		"VimLeavePre * "
 		"call writefile(['', '0', 'exit'], "
-		"g:tigcc_qt_state_file) | "
+		"g:tigcc_qt_state_file)\" | "
+
 		"augroup END"
 	).arg(
 		stateFilePath,
@@ -253,15 +268,8 @@ VimBackend::readVimState()
 		return;
 	}
 
-	// Debug file path
 	const QByteArray stateData =
 		stateFile.readAll();
-
-	qDebug()
-		<< "Raw Vim state data:"
-		<< stateData;
-	//
-
 
 	const QStringList lines =
 		QString::fromUtf8(
@@ -669,23 +677,6 @@ VimBackend::openFile(
 	arguments.append(
 		fileInfo.absoluteFilePath()
 	);
-	// Debug file path
-	qDebug()
-		<< "Vim working directory:"
-		<< fileInfo.absolutePath();
-
-	qDebug()
-		<< "Vim file argument:"
-		<< fileInfo.absoluteFilePath();
-
-	qDebug()
-		<< "Vim state command:"
-		<< vimStateCommand();
-
-	qDebug()
-		<< "Vim arguments:"
-		<< arguments;
-	//
 
 	m_terminal->setArgs(
 		arguments
@@ -818,14 +809,6 @@ VimBackend::saveCurrentFile(
 bool
 VimBackend::hasModifiedFiles() const
 {
-	qDebug()
-		<< "VimBackend::hasModifiedFiles():"
-		<< m_modified
-		<< "file:"
-		<< m_filePath
-		<< "event:"
-		<< m_lastVimEvent;
-
 	return m_modified;
 }
 
@@ -1002,9 +985,26 @@ VimBackend::closeAllFiles(
 	QString *errorMessage
 )
 {
-	Q_UNUSED(errorMessage);
+	if (m_terminal == nullptr ||
+		m_filePath.isEmpty()) {
+		return true;
+	}
 
-	return true;
+	if (m_modified) {
+		if (errorMessage != nullptr) {
+			*errorMessage =
+				QStringLiteral(
+					"The current file has "
+					"unsaved changes."
+				);
+		}
+
+		return false;
+	}
+
+	return closeCurrentFile(
+		errorMessage
+	);
 }
 
 
