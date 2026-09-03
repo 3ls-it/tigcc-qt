@@ -19,23 +19,22 @@
 #include <QFont>
 #include <QFileSystemWatcher>
 #include <QLabel>
-#include <QStackedWidget>
 #include <QStandardPaths>
 #include <QStringList>
+#include <QTabWidget>
 #include <QTimer>
 #include <QUuid>
 
 #include "vimbackend.h"
 
-#include <QDebug>
-
+//#include <QDebug>
 
 
 VimBackend::VimBackend(
 	QWidget *parent
 )
 	: EditorBackend(parent),
-	  m_stack(new QStackedWidget(parent)),
+	  m_tabs(new QTabWidget(parent)),
 	  m_welcomeWidget(nullptr),
 	  m_terminal(nullptr),
 	  m_stateFilePath(),
@@ -44,9 +43,7 @@ VimBackend::VimBackend(
 		  new QFileSystemWatcher(this)
 	  ),
 	  m_modified(false),
-	  m_fontPointSize(
-		  QApplication::font().pointSize()
-	  ),
+	  m_fontPointSize(12),
 	  m_lastVimEvent(),
 	  m_saveLoop(nullptr),
 	  m_savePending(false),
@@ -62,6 +59,18 @@ VimBackend::VimBackend(
 	  m_closeSucceeded(false),
 	  m_pendingFilePath()
 {
+	m_tabs->setDocumentMode(
+		true
+	);
+
+	m_tabs->setTabsClosable(
+		false
+	);
+
+	m_tabs->setMovable(
+		true
+	);
+
 	// Welcome panel
 	m_welcomeWidget =
 		new QLabel(
@@ -71,7 +80,7 @@ VimBackend::VimBackend(
 				"or other file in the "
 				"project tree to edit."
 			),
-			m_stack
+			m_tabs
 		);
 
 	m_welcomeWidget->setAlignment(
@@ -82,18 +91,14 @@ VimBackend::VimBackend(
 		160
 	);
 
-	m_stack->addWidget(
-		m_welcomeWidget
+	m_tabs->addTab(
+		m_welcomeWidget,
+		QStringLiteral("Welcome")
 	);
 
-	m_stack->setCurrentWidget(
+	m_tabs->setCurrentWidget(
 		m_welcomeWidget
 	);
-
-	// Ensure default font size as minimum
-	if (m_fontPointSize <= 0) {
-		m_fontPointSize = 10;
-	}
 
 	// set up stateFile path
 	const QString temporaryDirectory =
@@ -153,34 +158,21 @@ VimBackend::VimBackend(
 
 	// and connect
 	connect(
-		m_stateWatcher,
-		&QFileSystemWatcher::fileChanged,
+		m_tabs,
+		&QTabWidget::currentChanged,
 		this,
-		[this](const QString &path) {
-			if (path == m_stateFilePath) {
-				readVimState();
+		[this](int index) {
+			Q_UNUSED(index);
 
-				if (!m_stateWatcher->files().contains(
-						m_stateFilePath
-					)) {
-					m_stateWatcher->addPath(
-						m_stateFilePath
-					);
-				}
-			}
-
-			if (path == m_saveAckFilePath) {
-				readVimSaveAcknowledgement();
-
-				if (!m_stateWatcher->files().contains(
-						m_saveAckFilePath
-					)) {
-					m_stateWatcher->addPath(
-						m_saveAckFilePath
-					);
-				}
-			}
+			emitCurrentDocumentState();
 		}
+	);
+
+	connect(
+		m_tabs,
+		&QTabWidget::tabCloseRequested,
+		this,
+		&VimBackend::handleTabCloseRequested
 	);
 } // End constructor
 
@@ -188,25 +180,145 @@ VimBackend::VimBackend(
 QWidget *
 VimBackend::widget()
 {
-	return m_stack;
+	return m_tabs;
 }
 
 
-QString
-VimBackend::vimStateCommand() const
+VimBackend::VimSession *
+VimBackend::currentSession() const
 {
-	QString stateFilePath =
-		m_stateFilePath;
+	// Use current tab widget not tabIndex, which can
+	// change if tabs are moved.
+	QWidget *currentWidget =
+		m_tabs->currentWidget();
 
-	stateFilePath.replace(
+	if (currentWidget == nullptr) {
+		return nullptr;
+	}
+
+	for (VimSession *session :
+			m_sessions) {
+		if (session->terminal ==
+			currentWidget) {
+			return session;
+		}
+	}
+
+	return nullptr;
+} // End currentSession
+
+
+VimBackend::VimSession *
+VimBackend::sessionForPath(
+	const QString &filePath
+) const
+{
+	const QString normalizedPath =
+		QFileInfo(
+			filePath
+		).absoluteFilePath();
+
+	for (VimSession *session :
+			m_sessions) {
+		if (session->filePath ==
+			normalizedPath) {
+			return session;
+		}
+	}
+
+	return nullptr;
+} // End sessionForPath
+ 
+
+void
+VimBackend::removeWelcomeTab()
+{
+	const int welcomeTabIndex =
+		m_tabs->indexOf(
+			m_welcomeWidget
+		);
+
+	if (welcomeTabIndex >= 0) {
+		m_tabs->removeTab(
+			welcomeTabIndex
+		);
+	}
+} // End removeWelcomeTab
+
+
+void
+VimBackend::restoreWelcomeTab()
+{
+	if (m_tabs->indexOf(
+			m_welcomeWidget
+		) < 0) {
+		m_tabs->addTab(
+			m_welcomeWidget,
+			QStringLiteral("Welcome")
+		);
+	}
+
+	m_tabs->setCurrentWidget(
+		m_welcomeWidget
+	);
+
+	m_tabs->setTabsClosable(
+		false
+	);
+} // End restoreWelcomeTab
+
+
+void
+VimBackend::handleTabCloseRequested(
+	int index
+)
+{
+	if (index < 0 ||
+		index >= m_tabs->count()) {
+		return;
+	}
+
+	if (m_tabs->widget(index) ==
+		m_welcomeWidget) {
+		return;
+	}
+
+	m_tabs->setCurrentIndex(
+		index
+	);
+
+	QString errorMessage;
+
+	if (!closeCurrentFile(
+			&errorMessage
+		)) {
+		if (!errorMessage.isEmpty()) {
+			emit editorError(
+				errorMessage
+			);
+		}
+	}
+} // End handleTabCloseRequested
+
+
+QString
+VimBackend::vimStateCommand(
+	const QString &stateFilePath,
+	const QString &saveAckFilePath
+) const
+{
+	QString escapedStateFilePath =
+		stateFilePath;
+
+	escapedStateFilePath.replace(
 		QStringLiteral("'"),
 		QStringLiteral("''")
 	);
 
-	QString saveAckFilePath =
-		m_saveAckFilePath;
+	QString escapedSaveAckFilePath =
+		saveAckFilePath;
 
-	saveAckFilePath.replace(
+	escapedSaveAckFilePath.replace(
 		QStringLiteral("'"),
 		QStringLiteral("''")
 	);
@@ -249,14 +361,16 @@ VimBackend::vimStateCommand() const
 
 		"augroup END"
 	).arg(
-		stateFilePath,
-		saveAckFilePath
+		escapedStateFilePath,
+		escapedSaveAckFilePath
 	);
 } // End vimStateCommand
  
 
 void
-VimBackend::readVimState()
+VimBackend::readVimState(
+	VimBackend::VimSession *session
+	)
 {
 	QFile stateFile(
 		m_stateFilePath
@@ -383,7 +497,9 @@ VimBackend::readVimState()
 
 
 void
-VimBackend::readVimSaveAcknowledgement()
+VimBackend::readVimSaveAcknowledgement(
+	VimBackend::VimSession *session
+)
 {
 	QFile saveAckFile(
 		m_saveAckFilePath
@@ -508,31 +624,73 @@ VimBackend::sendVimEditCommand(
 
 
 void
-VimBackend::handleTerminalFinished()
+VimBackend::handleSessionFinished(
+	VimSession *session
+)
 {
-	m_terminal =
-		nullptr;
+	if (session == nullptr) {
+		return;
+	}
 
-	m_filePath.clear();
+	const int tabIndex =
+		m_tabs->indexOf(
+			session->terminal
+		);
 
-	m_stack->setCurrentWidget(
-		m_welcomeWidget
+	if (tabIndex >= 0) {
+		m_tabs->removeTab(
+			tabIndex
+		);
+	}
+
+	m_sessions.removeOne(
+		session
 	);
 
-	if (m_closePending) {
-		m_closePending =
-			false;
+	if (session->stateWatcher != nullptr) {
+		session->stateWatcher->removePath(
+			session->stateFilePath
+		);
 
-		m_closeSucceeded =
-			true;
+		session->stateWatcher->removePath(
+			session->saveAckFilePath
+		);
 
-		if (m_closeLoop != nullptr) {
-			m_closeLoop->quit();
-		}
+		session->stateWatcher->deleteLater();
+	}
+
+	QFile::remove(
+		session->stateFilePath
+	);
+
+	QFile::remove(
+		session->saveAckFilePath
+	);
+
+	if (session->terminal != nullptr) {
+		session->terminal->deleteLater();
+	}
+
+	delete session;
+
+	for (VimSession *remaining :
+			m_sessions) {
+		remaining->tabIndex =
+			m_tabs->indexOf(
+				remaining->terminal
+			);
+	}
+
+	if (m_sessions.isEmpty()) {
+		restoreWelcomeTab();
+	} else {
+		m_tabs->setTabsClosable(
+			true
+		);
 	}
 
 	emitCurrentDocumentState();
-} // End handleTerminalFinished
+} // End handleSessionFinished
 
 
 bool
@@ -541,129 +699,199 @@ VimBackend::openFile(
 	QString *errorMessage
 )
 {
+	// Validation and existing session lookup
 	const QFileInfo fileInfo(
 		filePath
 	);
 
-	if (!fileInfo.exists() || !fileInfo.isFile()) {
+	if (!fileInfo.exists() ||
+		!fileInfo.isFile()) {
 		if (errorMessage != nullptr) {
 			*errorMessage =
 				QStringLiteral(
 					"The file does not exist:\n%1"
-				).arg(filePath);
+				).arg(
+					filePath
+				);
 		}
 
 		return false;
 	}
 
-	if (m_terminal != nullptr) {
-		const QString normalizedPath =
-			fileInfo.absoluteFilePath();
+	const QString normalizedPath =
+		fileInfo.absoluteFilePath();
 
-		if (normalizedPath == m_filePath) {
-			return true;
-		}
-
-		QEventLoop editLoop;
-
-		QTimer timeoutTimer;
-
-		timeoutTimer.setSingleShot(
-			true
-		);
-
-		m_pendingFilePath =
-			normalizedPath;
-
-		m_editLoop =
-			&editLoop;
-
-		m_editPending =
-			true;
-
-		m_editSucceeded =
-			false;
-
-		connect(
-			&timeoutTimer,
-			&QTimer::timeout,
-			&editLoop,
-			&QEventLoop::quit
-		);
-
-		timeoutTimer.start(
-			5000
-		);
-
-		sendVimEditCommand(
+	VimSession *existingSession =
+		sessionForPath(
 			normalizedPath
 		);
 
-		editLoop.exec();
-
-		m_editLoop =
-			nullptr;
-
-		if (!m_editSucceeded) {
-			m_editPending =
-				false;
-
-			m_pendingFilePath.clear();
-
-			if (errorMessage != nullptr) {
-				*errorMessage =
-					QStringLiteral(
-						"Vim did not confirm that "
-						"the requested file was opened."
-					);
-			}
-
-			return false;
-		}
-
-		m_pendingFilePath.clear();
-
-		m_stack->setCurrentWidget(
-			m_terminal
+	if (existingSession != nullptr) {
+		m_tabs->setCurrentWidget(
+			existingSession->terminal
 		);
 
 		return true;
 	}
 
-	m_terminal =
-		new QTermWidget(
-			0,
-			m_stack
+	// Create a new session
+	const QString temporaryDirectory =
+		QStandardPaths::writableLocation(
+			QStandardPaths::TempLocation
 		);
 
-	// Apply font
+	const QString sessionId =
+		QUuid::createUuid().toString(
+			QUuid::WithoutBraces
+		);
+
+	const QString stateFilePath =
+		QDir(temporaryDirectory).filePath(
+			QStringLiteral(
+				"tigcc-qt-vim-%1.state"
+			).arg(
+				sessionId
+			)
+		);
+
+	const QString saveAckFilePath =
+		stateFilePath +
+		QStringLiteral(".write");
+
+	auto *terminal =
+		new QTermWidget(
+			0,
+			m_tabs
+		);
+
+	terminal->setWorkingDirectory(
+		fileInfo.absolutePath()
+	);
+
+	terminal->setShellProgram(
+		QStringLiteral("vim")
+	);
+
+	terminal->setAutoClose(
+		true
+	);
+
 	QFont terminalFont =
-		m_terminal->getTerminalFont();
+		terminal->getTerminalFont();
 
 	terminalFont.setPointSize(
 		m_fontPointSize
 	);
 
-	m_terminal->setTerminalFont(
+	terminal->setTerminalFont(
 		terminalFont
 	);
 
+	auto *stateWatcher =
+		new QFileSystemWatcher(
+			this
+		);
+
+	auto *session =
+		new VimSession{
+			terminal,
+			normalizedPath,
+			stateFilePath,
+			saveAckFilePath,
+			stateWatcher,
+			false,
+			-1
+		};
+
+	m_sessions.append(
+		session
+	);
+
+	// Create per-session state files
+	QFile stateFile(
+		session->stateFilePath
+	);
+
+	if (stateFile.open(
+			QIODevice::WriteOnly |
+			QIODevice::Truncate
+		)) {
+		stateFile.write(
+			"\n0\nstate\n"
+		);
+
+		stateFile.close();
+	}
+
+	QFile saveAckFile(
+		session->saveAckFilePath
+	);
+
+	if (saveAckFile.open(
+			QIODevice::WriteOnly |
+			QIODevice::Truncate
+		)) {
+		saveAckFile.close();
+	}
+
+	session->stateWatcher->addPath(
+		session->stateFilePath
+	);
+
+	session->stateWatcher->addPath(
+		session->saveAckFilePath
+	);
+
+	// Connect session-specific singnals
 	connect(
-		m_terminal,
+		session->terminal,
 		&QTermWidget::finished,
 		this,
-		&VimBackend::handleTerminalFinished
+		[this, session]() {
+			handleSessionFinished(
+				session
+			);
+		}
 	);
 
-	m_terminal->setWorkingDirectory(
-		fileInfo.absolutePath()
+	connect(
+		session->stateWatcher,
+		&QFileSystemWatcher::fileChanged,
+		this,
+		[this, session](const QString &path) {
+			if (path ==
+				session->stateFilePath) {
+				readVimState(
+					session
+				);
+
+				if (!session->stateWatcher->files().contains(
+						session->stateFilePath
+					)) {
+					session->stateWatcher->addPath(
+						session->stateFilePath
+					);
+				}
+			}
+
+			if (path ==
+				session->saveAckFilePath) {
+				readVimSaveAcknowledgement(
+					session
+				);
+
+				if (!session->stateWatcher->files().contains(
+						session->saveAckFilePath
+					)) {
+					session->stateWatcher->addPath(
+						session->saveAckFilePath
+					);
+				}
+			}
+		}
 	);
 
-	m_terminal->setShellProgram(
-		QStringLiteral("vim")
-	);
-
-	// First launch
+	// Configure Vim
 	QStringList arguments;
 
 	arguments.append(
@@ -671,38 +899,50 @@ VimBackend::openFile(
 	);
 
 	arguments.append(
-		vimStateCommand()
+		vimStateCommand(
+			session->stateFilePath,
+			session->saveAckFilePath
+		)
 	);
 
 	arguments.append(
-		fileInfo.absoluteFilePath()
+		session->filePath
 	);
 
-	m_terminal->setArgs(
+	session->terminal->setArgs(
 		arguments
 	);
 
-	m_terminal->setAutoClose(
+	// Remove welcome tab and add new tab
+	removeWelcomeTab();
+
+	const int tabIndex =
+		m_tabs->addTab(
+			session->terminal,
+			fileInfo.fileName()
+		);
+
+	session->tabIndex =
+		tabIndex;
+
+	m_tabs->setTabsClosable(
 		true
 	);
 
-	m_stack->addWidget(
-		m_terminal
+	m_tabs->setCurrentIndex(
+		tabIndex
 	);
 
-	m_terminal->startShellProgram();
+	// Start Vim
+	session->terminal->startShellProgram();
 
-	m_filePath =
-		fileInfo.absoluteFilePath();
-
-	m_stack->setCurrentWidget(
-		m_terminal
+	emit currentFileChanged(
+		session->filePath
 	);
 
-	m_modified =
-		false;
-
-	emitCurrentDocumentState();
+	emit modificationChanged(
+		false
+	);
 
 	return true;
 } // End openFile

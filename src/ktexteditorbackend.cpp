@@ -21,13 +21,6 @@
 #include <QLabel>
 #include <QMenu>
 
-/* DEBUG
-#include <QDebug>
-#include <QScrollBar>
-#include <QTimer>
-#include <QAbstractScrollArea>
- */
-
 #include "ktexteditorbackend.h"
 
 
@@ -38,7 +31,7 @@ KTextEditorBackend::KTextEditorBackend(
 	: EditorBackend(parent),
 	  m_tabs(new QTabWidget(parent)),
 	  m_emptyState(nullptr),
-	  m_fontPointSize(10)
+	  m_fontPointSize(12)
 {
 	m_tabs->setDocumentMode(true);
 	m_tabs->setTabsClosable(true);

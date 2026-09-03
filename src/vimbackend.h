@@ -21,7 +21,7 @@
 class QEventLoop;
 class QFileSystemWatcher;
 class QLabel;
-class QStackedWidget;
+class QTabWidget;
 class QTermWidget;
 class QWidget;
 
@@ -96,6 +96,25 @@ private:
 		int tabIndex;
 	};
 
+	VimSession *
+	currentSession() const;
+
+	VimSession *
+	sessionForPath(
+		const QString &filePath
+	) const;
+
+	void
+	handleTabCloseRequested(
+		int index
+	);
+
+	void
+	removeWelcomeTab();
+
+	void
+	restoreWelcomeTab();
+
 	void
 	sendVimCommand(
 		const QString &command
@@ -104,17 +123,21 @@ private:
 	void
 	emitCurrentDocumentState();
 
+	void
+	readVimState(
+		VimSession *session
+	);
+
+	void
+	readVimSaveAcknowledgement(
+		VimSession *session
+	);
+
 	QString
-	vimStateCommand() const;
-
-	void
-	readVimState();
-
-	void
-	readVimSaveAcknowledgement();
-
-	void
-	handleTerminalFinished();
+	vimStateCommand(
+		const QString &stateFilePath,
+		const QString &saveAckFilePath
+	) const;
 
 	void
 	sendVimEditCommand(
@@ -122,9 +145,14 @@ private:
 	);
 
 	void
+	handleSessionFinished(
+		VimSession *session
+	);
+
+	void
 	updateVimState();
 
-	QStackedWidget *m_stack;
+	QTabWidget *m_tabs;
 	QLabel *m_welcomeWidget;
 
 	QTermWidget *m_terminal;

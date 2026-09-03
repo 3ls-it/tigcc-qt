@@ -34,14 +34,8 @@ QScintillaBackend::QScintillaBackend(
 	: EditorBackend(parent),
 	  m_tabs(new QTabWidget(parent)),
 	  m_emptyState(nullptr),
-	  m_fontPointSize(
-		  QApplication::font().pointSize()
-	  )
+	  m_fontPointSize(12)
 {
-	if (m_fontPointSize <= 0) {
-		m_fontPointSize = 12;
-	}
-
 	m_tabs->setDocumentMode(
 		true
 	);
