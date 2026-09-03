@@ -12,6 +12,8 @@
 #ifndef TIGCC_QT_VIMBACKEND_H
 #define TIGCC_QT_VIMBACKEND_H
 
+#include <QList>
+
 #include "editorbackend.h"
 
 
@@ -83,6 +85,22 @@ public:
 	) override;
 
 private:
+	struct VimSession
+	{
+		QTermWidget *terminal;
+		QString filePath;
+		QString stateFilePath;
+		QString saveAckFilePath;
+		QFileSystemWatcher *stateWatcher;
+		bool modified;
+		int tabIndex;
+	};
+
+	void
+	sendVimCommand(
+		const QString &command
+	);
+
 	void
 	emitCurrentDocumentState();
 
@@ -104,21 +122,20 @@ private:
 	);
 
 	void
-	sendVimCommand(
-		const QString &command
-	);
-
-	void
 	updateVimState();
 
 	QStackedWidget *m_stack;
 	QLabel *m_welcomeWidget;
+
 	QTermWidget *m_terminal;
 	QString m_filePath;
 	QString m_stateFilePath;
 	QString m_saveAckFilePath;
 	QFileSystemWatcher *m_stateWatcher;
 	bool m_modified;
+
+	QList<VimSession *> m_sessions;
+
 	QString m_lastVimEvent;
 	int m_fontPointSize;
 	QEventLoop *m_saveLoop;
