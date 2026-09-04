@@ -121,6 +121,12 @@ private:
 	);
 
 	void
+	sendVimCommand(
+		VimSession *session,
+		const QString &command
+	);
+
+	void
 	emitCurrentDocumentState();
 
 	void
@@ -178,6 +184,7 @@ private:
 	QEventLoop *m_closeLoop;
 	bool m_closePending;
 	bool m_closeSucceeded;
+	VimSession *m_closeSession;
 	QString m_pendingFilePath;
 };
 

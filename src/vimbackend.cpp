@@ -57,6 +57,7 @@ VimBackend::VimBackend(
 	  m_closeLoop(nullptr),
 	  m_closePending(false),
 	  m_closeSucceeded(false),
+	  m_closeSession(nullptr),
 	  m_pendingFilePath()
 {
 	m_tabs->setDocumentMode(
@@ -229,6 +230,29 @@ VimBackend::sessionForPath(
 	return nullptr;
 } // End sessionForPath
  
+
+void
+VimBackend::sendVimCommand(
+	VimSession *session,
+	const QString &command
+)
+{
+	if (session == nullptr ||
+		session->terminal == nullptr) {
+		return;
+	}
+
+	const QString vimCommand =
+		QString(QChar(0x1b)) +
+		QStringLiteral(":") +
+		command +
+		QStringLiteral("\r");
+
+	session->terminal->sendText(
+		vimCommand
+	);
+} // End sendVimCommand
+
 
 void
 VimBackend::removeWelcomeTab()
@@ -646,6 +670,15 @@ VimBackend::handleSessionFinished(
 	m_sessions.removeOne(
 		session
 	);
+
+	if (m_closePending && m_closeSession == session) {
+		m_closePending = false;
+		m_closeSucceeded =true;
+
+		if (m_closeLoop != nullptr)
+			m_closeLoop->quit();
+		
+	}
 
 	if (session->stateWatcher != nullptr) {
 		session->stateWatcher->removePath(
@@ -1144,15 +1177,17 @@ VimBackend::discardAllChanges(
 
 bool
 VimBackend::closeCurrentFile(
-	QString *errorMessage
+   QString *errorMessage
 )
 {
-	if (m_terminal == nullptr ||
-		m_filePath.isEmpty()) {
+	VimSession *session =
+		currentSession();
+
+	if (session == nullptr) {
 		return true;
 	}
 
-	if (m_modified) {
+	if (session->modified) {
 		if (errorMessage != nullptr) {
 			*errorMessage =
 				QStringLiteral(
@@ -1175,6 +1210,9 @@ VimBackend::closeCurrentFile(
 	m_closeLoop =
 		&closeLoop;
 
+	m_closeSession =
+		session;
+
 	m_closePending =
 		true;
 
@@ -1193,12 +1231,16 @@ VimBackend::closeCurrentFile(
 	);
 
 	sendVimCommand(
+		session,
 		QStringLiteral("quit")
 	);
 
 	closeLoop.exec();
 
 	m_closeLoop =
+		nullptr;
+
+	m_closeSession =
 		nullptr;
 
 	if (!m_closeSucceeded) {
@@ -1216,7 +1258,7 @@ VimBackend::closeCurrentFile(
 		return false;
 	}
 
-	return true;
+    return true;
 } // End closeCurrentFile
 
 
