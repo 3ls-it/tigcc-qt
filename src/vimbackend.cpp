@@ -48,6 +48,7 @@ VimBackend::VimBackend(
 	  m_saveLoop(nullptr),
 	  m_savePending(false),
 	  m_saveSucceeded(false),
+	  m_saveSession(nullptr),
 	  m_editLoop(nullptr),
 	  m_editPending(false),
 	  m_editSucceeded(false),
@@ -396,8 +397,12 @@ VimBackend::readVimState(
 	VimBackend::VimSession *session
 	)
 {
+	if (session == nullptr) {
+		return;
+	}
+
 	QFile stateFile(
-		m_stateFilePath
+		session->stateFilePath
 	);
 
 	if (!stateFile.open(
@@ -445,10 +450,10 @@ VimBackend::readVimState(
 			return;
 		}
 
-		m_filePath =
+		session->filePath =
 			normalizedReportedPath;
 
-		m_modified =
+		session->modified =
 			reportedModified;
 
 		m_lastVimEvent =
@@ -470,13 +475,13 @@ VimBackend::readVimState(
 	}
 
 	if (!reportedFilePath.isEmpty()) {
-		m_filePath =
+		session->filePath =
 			QFileInfo(
 				reportedFilePath
 			).absoluteFilePath();
 	}
 
-	m_modified =
+	session->modified =
 		reportedModified;
 
 	m_lastVimEvent =
@@ -502,7 +507,7 @@ VimBackend::readVimState(
 		m_lastVimEvent ==
 			QStringLiteral("discard") &&
 		!reportedModified) {
-		m_modified =
+		session->modified =
 			false;
 
 		m_discardPending =
@@ -525,8 +530,12 @@ VimBackend::readVimSaveAcknowledgement(
 	VimBackend::VimSession *session
 )
 {
+	if (session == nullptr) {
+		return;
+	}
+
 	QFile saveAckFile(
-		m_saveAckFilePath
+		session->saveAckFilePath
 	);
 
 	if (!saveAckFile.open(
@@ -559,7 +568,8 @@ VimBackend::readVimSaveAcknowledgement(
 		return;
 	}
 
-	if (!m_savePending) {
+	if (!m_savePending ||
+		m_saveSession != session) {
 		return;
 	}
 
@@ -570,7 +580,7 @@ VimBackend::readVimSaveAcknowledgement(
 
 	const QString normalizedCurrentPath =
 		QFileInfo(
-			m_filePath
+			session->filePath
 		).absoluteFilePath();
 
 	if (normalizedReportedPath !=
@@ -578,21 +588,18 @@ VimBackend::readVimSaveAcknowledgement(
 		return;
 	}
 
-	m_savePending =
-		false;
+	m_savePending = false;
 
-	m_saveSucceeded =
-		true;
+	m_saveSucceeded = true;
 
-	m_modified =
-		false;
+	session->modified = false;
 
 	if (m_saveLoop != nullptr) {
 		m_saveLoop->quit();
 	}
 
 	emitCurrentDocumentState();
-} // End readVimSaveAcknowledgement
+} // End readVimSaveAcknowledgemen
 
 
 void
@@ -986,7 +993,10 @@ VimBackend::saveCurrentFile(
 	QString *errorMessage
 )
 {
-	if (m_terminal == nullptr) {
+	VimSession *session =
+		currentSession();
+
+	if (session == nullptr) {
 		if (errorMessage != nullptr) {
 			*errorMessage =
 				QStringLiteral(
@@ -998,24 +1008,22 @@ VimBackend::saveCurrentFile(
 	}
 
 	QEventLoop saveLoop;
-
 	QTimer timeoutTimer;
 
 	timeoutTimer.setSingleShot(
 		true
 	);
 
-	m_saveLoop =
-		&saveLoop;
+	m_saveLoop = &saveLoop;
 
-	m_savePending =
-		true;
+	m_saveSession = session;
 
-	m_saveSucceeded =
-		false;
+	m_savePending = true;
+
+	m_saveSucceeded = false;
 
 	QFile saveAckFile(
-		m_saveAckFilePath
+		session->saveAckFilePath
 	);
 
 	if (!saveAckFile.open(
@@ -1027,8 +1035,11 @@ VimBackend::saveCurrentFile(
 				saveAckFile.errorString();
 		}
 
-		m_savePending =
-			false;
+		m_saveLoop = nullptr;
+
+		m_saveSession = nullptr;
+
+		m_savePending = false;
 
 		return false;
 	}
@@ -1046,30 +1057,26 @@ VimBackend::saveCurrentFile(
 		5000
 	);
 
-	/*
-	 * The wait loop and timeout must be ready before
-	 * sending :write, otherwise the BufWritePost
-	 * acknowledgement can be missed.
-	 */
 	sendVimCommand(
+		session,
 		QStringLiteral("write")
 	);
 
 	saveLoop.exec();
 
-	m_saveLoop =
-		nullptr;
+	m_saveLoop = nullptr;
+
+	m_saveSession = nullptr;
 
 	if (!m_saveSucceeded) {
-		m_savePending =
-			false;
+		m_savePending = false;
 
 		if (errorMessage != nullptr) {
 			*errorMessage =
 				QStringLiteral(
 					"Vim did not confirm that "
 					"the file was saved."
-			);
+				);
 		}
 
 		return false;
@@ -1082,7 +1089,14 @@ VimBackend::saveCurrentFile(
 bool
 VimBackend::hasModifiedFiles() const
 {
-	return m_modified;
+	for (VimSession *session :
+			m_sessions) {
+		if (session->modified) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 
@@ -1293,22 +1307,38 @@ VimBackend::closeAllFiles(
 QString
 VimBackend::currentFilePath() const
 {
-	return m_filePath;
+	VimSession *session =
+		currentSession();
+
+	if (session == nullptr) {
+		return QString();
+	}
+
+	return session->filePath;
 }
 
 
 bool
 VimBackend::isModified() const
 {
-	return m_modified;
+	VimSession *session =
+		currentSession();
+
+	if (session == nullptr) {
+		return false;
+	}
+
+	return session->modified;
 }
 
 
 void
 VimBackend::emitCurrentDocumentState()
 {
-	if (m_terminal == nullptr ||
-		m_filePath.isEmpty()) {
+	VimSession *session =
+		currentSession();
+
+	if (session == nullptr) {
 		emit currentFileChanged(
 			QString()
 		);
@@ -1321,11 +1351,11 @@ VimBackend::emitCurrentDocumentState()
 	}
 
 	emit currentFileChanged(
-		m_filePath
+		session->filePath
 	);
 
 	emit modificationChanged(
-		isModified()
+		session->modified
 	);
 } // End emitCurrentDocumentState
 

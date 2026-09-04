@@ -175,6 +175,7 @@ private:
 	QEventLoop *m_saveLoop;
 	bool m_savePending;
 	bool m_saveSucceeded;
+	VimSession *m_saveSession;
 	QEventLoop *m_editLoop;
 	bool m_editPending;
 	bool m_editSucceeded;
