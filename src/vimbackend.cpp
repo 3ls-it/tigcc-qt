@@ -1105,18 +1105,46 @@ VimBackend::saveAllFiles(
 	QString *errorMessage
 )
 {
-	if (m_terminal == nullptr ||
-		m_filePath.isEmpty()) {
+	if (m_sessions.isEmpty()) {
 		return true;
 	}
 
-	if (!m_modified) {
-		return true;
+	const int originalTabIndex =
+		m_tabs->currentIndex();
+
+	for (VimSession *session :
+			m_sessions) {
+		if (session == nullptr ||
+			!session->modified) {
+			continue;
+		}
+
+		m_tabs->setCurrentWidget(
+			session->terminal
+		);
+
+		if (!saveCurrentFile(
+				errorMessage
+			)) {
+			if (originalTabIndex >= 0 &&
+				originalTabIndex < m_tabs->count()) {
+				m_tabs->setCurrentIndex(
+					originalTabIndex
+				);
+			}
+
+			return false;
+		}
 	}
 
-	return saveCurrentFile(
-		errorMessage
-	);
+	if (originalTabIndex >= 0 &&
+		originalTabIndex < m_tabs->count()) {
+		m_tabs->setCurrentIndex(
+			originalTabIndex
+		);
+	}
+
+	return true;
 } // End saveAllFiles
 
 
