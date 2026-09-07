@@ -32,6 +32,8 @@ public:
 		QWidget *parent = nullptr
 	);
 
+	~VimBackend() override;
+
 	QWidget *
 	widget() override;
 
@@ -91,6 +93,7 @@ private:
 		QString filePath;
 		QString stateFilePath;
 		QString saveAckFilePath;
+		QString discardAckFilePath;
 		QFileSystemWatcher *stateWatcher;
 		bool modified;
 		int tabIndex;
@@ -139,10 +142,16 @@ private:
 		VimSession *session
 	);
 
+	void
+	readVimDiscardAcknowledgement(
+		VimSession *session
+	);
+
 	QString
 	vimStateCommand(
 		const QString &stateFilePath,
-		const QString &saveAckFilePath
+		const QString &saveAckFilePath,
+		const QString &discardAckFilePath
 	) const;
 
 	void
@@ -158,14 +167,19 @@ private:
 	void
 	updateVimState();
 
+	void
+	removeSessionFiles(
+		VimSession *session
+	);
+
+	void
+	removeAllSessionFiles();
+
 	QTabWidget *m_tabs;
 	QLabel *m_welcomeWidget;
 
 	QTermWidget *m_terminal;
 	QString m_filePath;
-	QString m_stateFilePath;
-	QString m_saveAckFilePath;
-	QFileSystemWatcher *m_stateWatcher;
 	bool m_modified;
 
 	QList<VimSession *> m_sessions;
@@ -182,6 +196,7 @@ private:
 	QEventLoop *m_discardLoop;
 	bool m_discardPending;
 	bool m_discardSucceeded;
+	VimSession *m_discardSession;
 	QEventLoop *m_closeLoop;
 	bool m_closePending;
 	bool m_closeSucceeded;

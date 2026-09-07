@@ -1084,15 +1084,10 @@ MainWindow::updateEditorInterface()
 		);
 	}
 
-	if (titleParts.isEmpty()) {
+	if (titleParts.isEmpty())
 		titleParts.append(
 			QStringLiteral("TIGCC-Qt")
 		);
-	} else {
-		titleParts.append(
-			QStringLiteral("TIGCC-Qt")
-		);
-	}
 
 	QString windowTitle =
 		titleParts.join(

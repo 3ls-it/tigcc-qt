@@ -37,11 +37,6 @@ VimBackend::VimBackend(
 	  m_tabs(new QTabWidget(parent)),
 	  m_welcomeWidget(nullptr),
 	  m_terminal(nullptr),
-	  m_stateFilePath(),
-	  m_saveAckFilePath(),
-	  m_stateWatcher(
-		  new QFileSystemWatcher(this)
-	  ),
 	  m_modified(false),
 	  m_fontPointSize(12),
 	  m_lastVimEvent(),
@@ -55,6 +50,7 @@ VimBackend::VimBackend(
 	  m_discardLoop(nullptr),
 	  m_discardPending(false),
 	  m_discardSucceeded(false),
+	  m_discardSession(nullptr),
 	  m_closeLoop(nullptr),
 	  m_closePending(false),
 	  m_closeSucceeded(false),
@@ -102,62 +98,6 @@ VimBackend::VimBackend(
 		m_welcomeWidget
 	);
 
-	// set up stateFile path
-	const QString temporaryDirectory =
-		QStandardPaths::writableLocation(
-			QStandardPaths::TempLocation
-		);
-
-	m_stateFilePath =
-		QDir(temporaryDirectory).filePath(
-			QStringLiteral(
-				"tigcc-qt-vim-%1.state"
-			).arg(
-				QUuid::createUuid().toString(
-					QUuid::WithoutBraces
-				)
-			)
-		);
-
-	m_saveAckFilePath =
-		m_stateFilePath +
-		QStringLiteral(".write");
-
-	// initial stateFile
-	QFile stateFile(
-		m_stateFilePath
-	);
-
-	if (stateFile.open(
-			QIODevice::WriteOnly |
-			QIODevice::Truncate
-		)) {
-		stateFile.write(
-			"\n0\nstate\n"
-		);
-
-		stateFile.close();
-	}
-
-	QFile saveAckFile(
-		m_saveAckFilePath
-	);
-
-	if (saveAckFile.open(
-			QIODevice::WriteOnly |
-			QIODevice::Truncate
-		)) {
-		saveAckFile.close();
-	}
-
-	m_stateWatcher->addPath(
-		m_stateFilePath
-	);
-
-	m_stateWatcher->addPath(
-		m_saveAckFilePath
-	);
-
 	// and connect
 	connect(
 		m_tabs,
@@ -177,6 +117,13 @@ VimBackend::VimBackend(
 		&VimBackend::handleTabCloseRequested
 	);
 } // End constructor
+
+
+VimBackend::~VimBackend()
+{
+	removeAllSessionFiles();
+} // End destructor
+
 
 
 QWidget *
@@ -329,9 +276,11 @@ VimBackend::handleTabCloseRequested(
 QString
 VimBackend::vimStateCommand(
 	const QString &stateFilePath,
-	const QString &saveAckFilePath
+	const QString &saveAckFilePath,
+	const QString &discardAckFilePath
 ) const
 {
+	//
 	QString escapedStateFilePath =
 		stateFilePath;
 
@@ -340,6 +289,7 @@ VimBackend::vimStateCommand(
 		QStringLiteral("''")
 	);
 
+	//
 	QString escapedSaveAckFilePath =
 		saveAckFilePath;
 
@@ -348,10 +298,20 @@ VimBackend::vimStateCommand(
 		QStringLiteral("''")
 	);
 
+	//
+	QString escapedDiscardAckFilePath =
+		discardAckFilePath;
+
+	escapedDiscardAckFilePath.replace(
+		QStringLiteral("'"),
+		QStringLiteral("''")
+	);
+
 	// Construct a Vimscript string
 	return QStringLiteral(
 		"let g:tigcc_qt_state_file = '%1' | "
 		"let g:tigcc_qt_save_ack_file = '%2' | "
+		"let g:tigcc_qt_discard_ack_file = '%3' | "
 		"augroup TigccQtState | "
 		"autocmd! | "
 
@@ -363,9 +323,8 @@ VimBackend::vimStateCommand(
 
 		"execute \"autocmd "
 		"BufReadPost * "
-		"call writefile([expand('%:p'), "
-		"&modified ? '1' : '0', 'discard'], "
-		"g:tigcc_qt_state_file)\" | "
+		"call writefile([expand('%:p'), 'discard'], "
+		"g:tigcc_qt_discard_ack_file)\" | "
 
 		"execute \"autocmd "
 		"BufWritePost * "
@@ -387,7 +346,8 @@ VimBackend::vimStateCommand(
 		"augroup END"
 	).arg(
 		escapedStateFilePath,
-		escapedSaveAckFilePath
+		escapedSaveAckFilePath,
+		escapedDiscardAckFilePath
 	);
 } // End vimStateCommand
  
@@ -502,25 +462,6 @@ VimBackend::readVimState(
 		}
 	}
 
-	// Acknowledge pending discard
-	if (m_discardPending &&
-		m_lastVimEvent ==
-			QStringLiteral("discard") &&
-		!reportedModified) {
-		session->modified =
-			false;
-
-		m_discardPending =
-			false;
-
-		m_discardSucceeded =
-			true;
-
-		if (m_discardLoop != nullptr) {
-			m_discardLoop->quit();
-		}
-	}
-
 	emitCurrentDocumentState();
 } // End readVimState
 
@@ -599,7 +540,84 @@ VimBackend::readVimSaveAcknowledgement(
 	}
 
 	emitCurrentDocumentState();
-} // End readVimSaveAcknowledgemen
+} // End readVimSaveAcknowledgement
+
+
+void
+VimBackend::readVimDiscardAcknowledgement(
+	VimSession *session
+)
+{
+	if (session == nullptr) {
+		return;
+	}
+
+	QFile discardAckFile(
+		session->discardAckFilePath
+	);
+
+	if (!discardAckFile.open(
+			QIODevice::ReadOnly
+		)) {
+		return;
+	}
+
+	const QStringList lines =
+		QString::fromUtf8(
+			discardAckFile.readAll()
+		).split(
+			QChar('\n')
+		);
+
+	discardAckFile.close();
+
+	if (lines.size() < 2) {
+		return;
+	}
+
+	const QString reportedFilePath =
+		lines.at(0).trimmed();
+
+	const QString reportedEvent =
+		lines.at(1).trimmed();
+
+	if (!m_discardPending ||
+		m_discardSession != session ||
+		reportedEvent !=
+			QStringLiteral("discard")) {
+		return;
+	}
+
+	const QString normalizedReportedPath =
+		QFileInfo(
+			reportedFilePath
+		).absoluteFilePath();
+
+	const QString normalizedSessionPath =
+		QFileInfo(
+			session->filePath
+		).absoluteFilePath();
+
+	if (normalizedReportedPath !=
+		normalizedSessionPath) {
+		return;
+	}
+
+	session->modified =
+		false;
+
+	m_discardPending =
+		false;
+
+	m_discardSucceeded =
+		true;
+
+	if (m_discardLoop != nullptr) {
+		m_discardLoop->quit();
+	}
+
+	emitCurrentDocumentState();
+} // End readVimDiscardAcknowledgement
 
 
 void
@@ -687,25 +705,14 @@ VimBackend::handleSessionFinished(
 		
 	}
 
+	// Clean up state files
+	removeSessionFiles(
+		session
+	);
+
 	if (session->stateWatcher != nullptr) {
-		session->stateWatcher->removePath(
-			session->stateFilePath
-		);
-
-		session->stateWatcher->removePath(
-			session->saveAckFilePath
-		);
-
 		session->stateWatcher->deleteLater();
 	}
-
-	QFile::remove(
-		session->stateFilePath
-	);
-
-	QFile::remove(
-		session->saveAckFilePath
-	);
 
 	if (session->terminal != nullptr) {
 		session->terminal->deleteLater();
@@ -785,6 +792,7 @@ VimBackend::openFile(
 			QUuid::WithoutBraces
 		);
 
+	// Set up state files
 	const QString stateFilePath =
 		QDir(temporaryDirectory).filePath(
 			QStringLiteral(
@@ -798,6 +806,11 @@ VimBackend::openFile(
 		stateFilePath +
 		QStringLiteral(".write");
 
+	const QString discardAckFilePath =
+		stateFilePath +
+		QStringLiteral(".discard");
+
+	// Create terminal object
 	auto *terminal =
 		new QTermWidget(
 			0,
@@ -832,12 +845,14 @@ VimBackend::openFile(
 			this
 		);
 
+	// Create VimSession object
 	auto *session =
 		new VimSession{
 			terminal,
 			normalizedPath,
 			stateFilePath,
 			saveAckFilePath,
+			discardAckFilePath,
 			stateWatcher,
 			false,
 			-1
@@ -848,6 +863,7 @@ VimBackend::openFile(
 	);
 
 	// Create per-session state files
+	// state
 	QFile stateFile(
 		session->stateFilePath
 	);
@@ -863,6 +879,7 @@ VimBackend::openFile(
 		stateFile.close();
 	}
 
+	// save ack
 	QFile saveAckFile(
 		session->saveAckFilePath
 	);
@@ -874,12 +891,29 @@ VimBackend::openFile(
 		saveAckFile.close();
 	}
 
+	// discard ack
+	QFile discardAckFile(
+		session->discardAckFilePath
+	);
+
+	if (discardAckFile.open(
+			QIODevice::WriteOnly |
+			QIODevice::Truncate
+		)) {
+		discardAckFile.close();
+	}
+
+	// watchers
 	session->stateWatcher->addPath(
 		session->stateFilePath
 	);
 
 	session->stateWatcher->addPath(
 		session->saveAckFilePath
+	);
+
+	session->stateWatcher->addPath(
+		session->discardAckFilePath
 	);
 
 	// Connect session-specific singnals
@@ -928,6 +962,21 @@ VimBackend::openFile(
 					);
 				}
 			}
+
+			if (path ==
+				session->discardAckFilePath) {
+				readVimDiscardAcknowledgement(
+					session
+				);
+
+				if (!session->stateWatcher->files().contains(
+						session->discardAckFilePath
+					)) {
+					session->stateWatcher->addPath(
+						session->discardAckFilePath
+					);
+				}
+			}
 		}
 	);
 
@@ -941,7 +990,8 @@ VimBackend::openFile(
 	arguments.append(
 		vimStateCommand(
 			session->stateFilePath,
-			session->saveAckFilePath
+			session->saveAckFilePath,
+			session->discardAckFilePath
 		)
 	);
 
@@ -1153,62 +1203,124 @@ VimBackend::discardAllChanges(
 	QString *errorMessage
 )
 {
-	if (m_terminal == nullptr ||
-		m_filePath.isEmpty() ||
-		!m_modified) {
+	if (m_sessions.isEmpty()) {
 		return true;
 	}
 
-	QEventLoop discardLoop;
+	const int originalTabIndex =
+		m_tabs->currentIndex();
 
-	QTimer timeoutTimer;
-
-	timeoutTimer.setSingleShot(
-		true
-	);
-
-	m_discardLoop =
-		&discardLoop;
-
-	m_discardPending =
-		true;
-
-	m_discardSucceeded =
-		false;
-
-	connect(
-		&timeoutTimer,
-		&QTimer::timeout,
-		&discardLoop,
-		&QEventLoop::quit
-	);
-
-	timeoutTimer.start(
-		5000
-	);
-
-	sendVimCommand(
-		QStringLiteral("edit!")
-	);
-
-	discardLoop.exec();
-
-	m_discardLoop =
-		nullptr;
-
-	if (!m_discardSucceeded) {
-		m_discardPending =
-			false;
-
-		if (errorMessage != nullptr) {
-			*errorMessage =
-				QStringLiteral(
-					"Vim did not confirm that "
-					"changes were discarded."
-				);
+	for (VimSession *session :
+			m_sessions) {
+		if (session == nullptr ||
+			!session->modified) {
+			continue;
 		}
 
-		return false;
+		m_tabs->setCurrentWidget(
+			session->terminal
+		);
+
+		QEventLoop discardLoop;
+		QTimer timeoutTimer;
+
+		timeoutTimer.setSingleShot(
+			true
+		);
+
+		m_discardLoop =
+			&discardLoop;
+
+		m_discardSession =
+			session;
+
+		m_discardPending =
+			true;
+
+		m_discardSucceeded =
+			false;
+
+		// Clear previous ack
+		QFile discardAckFile(
+			session->discardAckFilePath
+		);
+
+		if (!discardAckFile.open(
+				QIODevice::WriteOnly |
+				QIODevice::Truncate
+			)) {
+			if (errorMessage != nullptr) {
+				*errorMessage =
+					discardAckFile.errorString();
+			}
+
+			m_discardPending =
+				false;
+
+			m_discardSession =
+				nullptr;
+
+			m_discardLoop =
+				nullptr;
+
+			return false;
+		}
+
+		discardAckFile.close();
+		//
+
+		connect(
+			&timeoutTimer,
+			&QTimer::timeout,
+			&discardLoop,
+			&QEventLoop::quit
+		);
+
+		timeoutTimer.start(
+			5000
+		);
+
+		sendVimCommand(
+			session,
+			QStringLiteral("edit!")
+		);
+
+		discardLoop.exec();
+
+		m_discardLoop =
+			nullptr;
+
+		m_discardSession =
+			nullptr;
+
+		if (!m_discardSucceeded) {
+			m_discardPending =
+				false;
+
+			if (originalTabIndex >= 0 &&
+				originalTabIndex < m_tabs->count()) {
+				m_tabs->setCurrentIndex(
+					originalTabIndex
+				);
+			}
+
+			if (errorMessage != nullptr) {
+				*errorMessage =
+					QStringLiteral(
+						"Vim did not confirm that "
+						"changes were discarded."
+					);
+			}
+
+			return false;
+		}
+	}
+
+	if (originalTabIndex >= 0 &&
+		originalTabIndex < m_tabs->count()) {
+		m_tabs->setCurrentIndex(
+			originalTabIndex
+		);
 	}
 
 	emitCurrentDocumentState();
@@ -1386,6 +1498,55 @@ VimBackend::emitCurrentDocumentState()
 		session->modified
 	);
 } // End emitCurrentDocumentState
+
+
+void
+VimBackend::removeSessionFiles(
+	VimSession *session
+)
+{
+	if (session == nullptr) {
+		return;
+	}
+
+	if (session->stateWatcher != nullptr) {
+		session->stateWatcher->removePath(
+			session->stateFilePath
+		);
+
+		session->stateWatcher->removePath(
+			session->saveAckFilePath
+		);
+
+		session->stateWatcher->removePath(
+			session->discardAckFilePath
+		);
+	}
+
+	QFile::remove(
+		session->stateFilePath
+	);
+
+	QFile::remove(
+		session->saveAckFilePath
+	);
+
+	QFile::remove(
+		session->discardAckFilePath
+	);
+} // End removeSessionFiles
+
+
+void
+VimBackend::removeAllSessionFiles()
+{
+	for (VimSession *session :
+			m_sessions) {
+		removeSessionFiles(
+			session
+		);
+	}
+} // End removeAllSessionFiles
 
 
 int
