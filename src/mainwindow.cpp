@@ -5,6 +5,7 @@
  * This file is part of TIGCC-Qt.
  *
  * Copyright (c) 2026 J Adams <jfa63@duck.com>
+ * Copyright (c) 2026 @jfx2006
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
@@ -80,7 +81,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     rightSplitter->setStretchFactor(0, 4);
     rightSplitter->setStretchFactor(1, 1);
-	rightSplitter->setSizes({644, 185});
+	rightSplitter->setSizes({600, 185});
 
 	editor->widget()->setMinimumHeight(160);
 	buildOutput->setMinimumHeight(80);
@@ -222,13 +223,13 @@ MainWindow::MainWindow(QWidget *parent)
 		&MainWindow::openProjectFile
 	);
 
-	// View menu
-		auto *viewMenu = menuBar()->addMenu(
-		QStringLiteral("&View")
+	// Editor menu
+	auto *editorMenu = menuBar()->addMenu(
+		QStringLiteral("&Editor")
 	);
 
 	auto *editorBackendMenu =
-		viewMenu->addMenu(
+		editorMenu->addMenu(
 			QStringLiteral("Editor Backend")
 		);
 
@@ -270,7 +271,7 @@ MainWindow::MainWindow(QWidget *parent)
 	);
 
 #ifdef USE_KTEXTEDITOR
-  // Kate
+  // KTextEditor
 	ktextEditorBackendAction =
 		editorBackendMenu->addAction(
 			QStringLiteral("KTextEditor")
@@ -334,7 +335,7 @@ MainWindow::MainWindow(QWidget *parent)
 #endif
 
 	auto *editorFontSizeMenu =
-		viewMenu->addMenu(
+		editorMenu->addMenu(
 			QStringLiteral("Editor Font Size")
 		);
 
