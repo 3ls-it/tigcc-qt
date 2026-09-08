@@ -120,11 +120,6 @@ private:
 
 	void
 	sendVimCommand(
-		const QString &command
-	);
-
-	void
-	sendVimCommand(
 		VimSession *session,
 		const QString &command
 	);
@@ -155,17 +150,9 @@ private:
 	) const;
 
 	void
-	sendVimEditCommand(
-		const QString &filePath
-	);
-
-	void
 	handleSessionFinished(
 		VimSession *session
 	);
-
-	void
-	updateVimState();
 
 	void
 	removeSessionFiles(
@@ -178,10 +165,6 @@ private:
 	QTabWidget *m_tabs;
 	QLabel *m_welcomeWidget;
 
-	QTermWidget *m_terminal;
-	QString m_filePath;
-	bool m_modified;
-
 	QList<VimSession *> m_sessions;
 
 	QString m_lastVimEvent;
@@ -190,9 +173,6 @@ private:
 	bool m_savePending;
 	bool m_saveSucceeded;
 	VimSession *m_saveSession;
-	QEventLoop *m_editLoop;
-	bool m_editPending;
-	bool m_editSucceeded;
 	QEventLoop *m_discardLoop;
 	bool m_discardPending;
 	bool m_discardSucceeded;
@@ -201,7 +181,6 @@ private:
 	bool m_closePending;
 	bool m_closeSucceeded;
 	VimSession *m_closeSession;
-	QString m_pendingFilePath;
 };
 
 #endif // TIGCC_QT_VIMBACKEND_H

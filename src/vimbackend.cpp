@@ -36,17 +36,13 @@ VimBackend::VimBackend(
 	: EditorBackend(parent),
 	  m_tabs(new QTabWidget(parent)),
 	  m_welcomeWidget(nullptr),
-	  m_terminal(nullptr),
-	  m_modified(false),
-	  m_fontPointSize(12),
+	  m_sessions(),
 	  m_lastVimEvent(),
+	  m_fontPointSize(12),
 	  m_saveLoop(nullptr),
 	  m_savePending(false),
 	  m_saveSucceeded(false),
 	  m_saveSession(nullptr),
-	  m_editLoop(nullptr),
-	  m_editPending(false),
-	  m_editSucceeded(false),
 	  m_discardLoop(nullptr),
 	  m_discardPending(false),
 	  m_discardSucceeded(false),
@@ -54,8 +50,7 @@ VimBackend::VimBackend(
 	  m_closeLoop(nullptr),
 	  m_closePending(false),
 	  m_closeSucceeded(false),
-	  m_closeSession(nullptr),
-	  m_pendingFilePath()
+	  m_closeSession(nullptr)
 {
 	m_tabs->setDocumentMode(
 		true
@@ -404,36 +399,6 @@ VimBackend::readVimState(
 				reportedFilePath
 			).absoluteFilePath();
 
-	if (m_editPending) {
-		if (normalizedReportedPath !=
-			m_pendingFilePath) {
-			return;
-		}
-
-		session->filePath =
-			normalizedReportedPath;
-
-		session->modified =
-			reportedModified;
-
-		m_lastVimEvent =
-			reportedEvent;
-
-		m_editPending =
-			false;
-
-		m_editSucceeded =
-			true;
-
-		if (m_editLoop != nullptr) {
-			m_editLoop->quit();
-		}
-
-		emitCurrentDocumentState();
-
-		return;
-	}
-
 	if (!reportedFilePath.isEmpty()) {
 		session->filePath =
 			QFileInfo(
@@ -618,58 +583,6 @@ VimBackend::readVimDiscardAcknowledgement(
 
 	emitCurrentDocumentState();
 } // End readVimDiscardAcknowledgement
-
-
-void
-VimBackend::sendVimCommand(
-	const QString &command
-)
-{
-	const QString vim_cmd =
-		QString(QChar(0x1b)) +
-		QStringLiteral(":") +
-		command +
-		QStringLiteral("\r");
-
-	m_terminal->sendText(
-		vim_cmd
-	);
-}
-
-
-void
-VimBackend::sendVimEditCommand(
-	const QString &filePath
-)
-{
-	if (m_terminal == nullptr) {
-		return;
-	}
-
-	QString vimPath =
-		filePath;
-
-	/*
-	 * Vim's single-quoted strings represent a literal
-	 * quote by doubling it.
-	 */
-	vimPath.replace(
-		QStringLiteral("'"),
-		QStringLiteral("''")
-	);
-
-	const QString command =
-		QStringLiteral(
-			":execute 'edit ' . fnameescape('%1')\r"
-		).arg(
-			vimPath
-		);
-
-	m_terminal->sendText(
-		QString(QChar(0x1b)) +
-		command
-	);
-} // End sendVimEditCommand
 
 
 void
@@ -1421,27 +1334,57 @@ VimBackend::closeAllFiles(
 	QString *errorMessage
 )
 {
-	if (m_terminal == nullptr ||
-		m_filePath.isEmpty()) {
+	if (m_sessions.isEmpty()) {
 		return true;
 	}
 
-	if (m_modified) {
-		if (errorMessage != nullptr) {
-			*errorMessage =
-				QStringLiteral(
-					"The current file has "
-					"unsaved changes."
-				);
-		}
+	/*
+	 * Check all sessions before closing anything.
+	 * This preserves the all-or-nothing behavior.
+	 */
+	for (VimSession *session :
+			m_sessions) {
+		if (session != nullptr &&
+			session->modified) {
+			if (errorMessage != nullptr) {
+				*errorMessage =
+					QStringLiteral(
+						"One or more files have "
+						"unsaved changes."
+					);
+			}
 
-		return false;
+			return false;
+		}
 	}
 
-	return closeCurrentFile(
-		errorMessage
-	);
-}
+	/*
+	 * closeCurrentFile() causes handleSessionFinished()
+	 * to remove the session from m_sessions, so do not
+	 * use a range-based loop here.
+	 */
+	while (!m_sessions.isEmpty()) {
+		VimSession *session =
+			m_sessions.first();
+
+		if (session == nullptr) {
+			m_sessions.removeFirst();
+			continue;
+		}
+
+		m_tabs->setCurrentWidget(
+			session->terminal
+		);
+
+		if (!closeCurrentFile(
+				errorMessage
+			)) {
+			return false;
+		}
+	}
+
+	return true;
+} // End closeAllFiles
 
 
 QString
@@ -1582,15 +1525,21 @@ VimBackend::setFontPointSize(
 	m_fontPointSize =
 		pointSize;
 
-	if (m_terminal != nullptr) {
+	for (VimSession *session :
+			m_sessions) {
+		if (session == nullptr ||
+			session->terminal == nullptr) {
+			continue;
+		}
+
 		QFont terminalFont =
-			m_terminal->getTerminalFont();
+			session->terminal->getTerminalFont();
 
 		terminalFont.setPointSize(
 			m_fontPointSize
 		);
 
-		m_terminal->setTerminalFont(
+		session->terminal->setTerminalFont(
 			terminalFont
 		);
 	}
