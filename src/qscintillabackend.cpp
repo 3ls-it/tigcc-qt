@@ -26,6 +26,8 @@
 
 #include "qscintillabackend.h"
 
+#include <QDebug>
+
 
 
 QScintillaBackend::QScintillaBackend(
@@ -53,7 +55,7 @@ QScintillaBackend::QScintillaBackend(
 
 	m_tabs->addTab(
 		m_emptyState,
-		QStringLiteral("Welcome")
+		QStringLiteral("QScintilla")
 	);
 
 	connect(
@@ -518,20 +520,123 @@ QScintillaBackend::saveAllFiles(
 
 
 bool
+QScintillaBackend::reloadDocumentEntry(
+	DocumentEntry *entry,
+	QString *errorMessage
+)
+{
+	if (entry == nullptr) {
+		if (errorMessage != nullptr) {
+			*errorMessage =
+				QStringLiteral(
+					"No editor document is available."
+				);
+		}
+
+		return false;
+	}
+
+	QFile file(
+		entry->filePath
+	);
+
+	if (!file.open(
+			QIODevice::ReadOnly
+		)) {
+		if (errorMessage != nullptr) {
+			*errorMessage =
+				file.errorString();
+		}
+
+		return false;
+	}
+
+	const QSignalBlocker signalBlocker(
+		entry->editor
+	);
+
+	if (!entry->editor->read(
+			&file
+		)) {
+		if (errorMessage != nullptr) {
+			*errorMessage =
+				QStringLiteral(
+					"QScintilla could not reload:\n%1"
+				).arg(
+					entry->filePath
+				);
+		}
+
+		file.close();
+
+		return false;
+	}
+
+	file.close();
+
+	/*
+	 * read() should establish a clean document state.
+	 * Keep this explicit as a safety measure.
+	 */
+	entry->editor->setModified(
+		false
+	);
+
+	updateTabTitle(
+		entry
+	);
+
+	return true;
+} // End reloadDocumentEntry
+
+
+bool
 QScintillaBackend::discardAllChanges(
 	QString *errorMessage
 )
 {
-	Q_UNUSED(errorMessage);
+qDebug()
+	<< "QScintilla discardAllChanges(): begin"
+	<< "modified files:"
+	<< hasModifiedFiles();
 
-	for (DocumentEntry *entry : m_documents) {
-		entry->editor->setModified(
-			false
-		);
+	for (DocumentEntry *entry :
+			m_documents) {
+		if (entry == nullptr ||
+			!entry->editor->isModified()) {
+			continue;
+		}
+qDebug()
+	<< "Document:"
+	<< entry->filePath
+	<< "modified:"
+	<< entry->editor->isModified();
+		if (!reloadDocumentEntry(
+				entry,
+				errorMessage
+			)) {
+			emitCurrentDocumentState();
 
-		updateTabTitle(
-			entry
-		);
+			return false;
+		}
+	}
+
+	for (DocumentEntry *entry :
+			m_documents) {
+		if (entry != nullptr &&
+			entry->editor->isModified()) {
+			if (errorMessage != nullptr) {
+				*errorMessage =
+					QStringLiteral(
+						"One or more files remain "
+						"modified after discard."
+					);
+			}
+
+			emitCurrentDocumentState();
+
+			return false;
+		}
 	}
 
 	emitCurrentDocumentState();

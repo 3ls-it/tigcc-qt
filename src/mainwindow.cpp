@@ -36,6 +36,9 @@
 #include "projecttreewidget.h"
 
 
+#include <QDebug>
+
+
 
 MainWindow::MainWindow(QWidget *parent)
 	: QMainWindow(parent),
@@ -1117,6 +1120,13 @@ MainWindow::updateEditorInterface()
 bool
 MainWindow::confirmEditorChanges()
 {
+qDebug()
+	<< "confirmEditorChanges(): entered"
+	<< "has modified files:"
+	<< editor->hasModifiedFiles()
+	<< "current file:"
+	<< editor->currentFilePath();
+
 	if (!editor->hasModifiedFiles()) {
 		return true;
 	}
@@ -1157,6 +1167,50 @@ MainWindow::confirmEditorChanges()
 				)) {
 				QMessageBox::critical(
 					this,
+					QStringLiteral("Cannot Save Files"),
+					errorMessage
+				);
+
+				qDebug()
+					<< "confirmEditorChanges(): "
+					<< "Save failed";
+
+				return false;
+			}
+
+			qDebug()
+				<< "confirmEditorChanges(): "
+				<< "returning Save";
+
+			return true;
+		}
+
+		case QMessageBox::Discard:
+			qDebug()
+				<< "confirmEditorChanges(): "
+				<< "returning Discard";
+
+			return true;
+
+		case QMessageBox::Cancel:
+		default:
+			qDebug()
+				<< "confirmEditorChanges(): "
+				<< "returning Cancel";
+
+			return false;
+	}
+#if 0
+	switch (result) {
+		case QMessageBox::Save:
+		{
+			QString errorMessage;
+
+			if (!editor->saveAllFiles(
+					&errorMessage
+				)) {
+				QMessageBox::critical(
+					this,
 					QStringLiteral(
 						"Cannot Save Files"
 					),
@@ -1165,20 +1219,104 @@ MainWindow::confirmEditorChanges()
 
 				return false;
 			}
-
-			return true;
-		}
-
 		case QMessageBox::Discard:
 			return true;
 
 		case QMessageBox::Cancel:
+
 		default:
 			return false;
 	}
+#endif
 } // End confirmEditorChanges
 
 
+bool
+MainWindow::prepareForProjectChange()
+{
+	qDebug()
+		<< "prepareForProjectChange(): entered";
+
+	if (!confirmEditorChanges()) {
+		qDebug()
+			<< "prepareForProjectChange(): "
+			<< "confirmEditorChanges() returned false";
+
+		return false;
+	}
+
+	qDebug()
+		<< "prepareForProjectChange(): "
+		<< "initial guard passed";
+
+	if (editor->hasModifiedFiles()) {
+		qDebug()
+			<< "prepareForProjectChange(): "
+			<< "before discard"
+			<< "has modified files:"
+			<< editor->hasModifiedFiles();
+
+		QString errorMessage;
+
+		if (!editor->discardAllChanges(
+				&errorMessage
+			)) {
+			QMessageBox::critical(
+				this,
+				QStringLiteral(
+					"Cannot Discard Changes"
+				),
+				errorMessage
+			);
+
+			qDebug()
+				<< "prepareForProjectChange(): "
+				<< "discard failed";
+
+			return false;
+		}
+
+		qDebug()
+			<< "prepareForProjectChange(): "
+			<< "after discard"
+			<< "has modified files:"
+			<< editor->hasModifiedFiles();
+	}
+
+	qDebug()
+		<< "prepareForProjectChange(): "
+		<< "before closeAllFiles"
+		<< "has modified files:"
+		<< editor->hasModifiedFiles();
+
+	QString errorMessage;
+
+	if (!editor->closeAllFiles(
+			&errorMessage
+		)) {
+		QMessageBox::critical(
+			this,
+			QStringLiteral(
+				"Cannot Close Editor Files"
+			),
+			errorMessage
+		);
+
+		qDebug()
+			<< "prepareForProjectChange(): "
+			<< "closeAllFiles() failed";
+
+		return false;
+	}
+
+	qDebug()
+		<< "prepareForProjectChange(): "
+		<< "completed successfully";
+
+	return true;
+} // End prepareForProjectChange
+
+#if 0
 bool
 MainWindow::prepareForProjectChange()
 {
@@ -1226,6 +1364,7 @@ MainWindow::prepareForProjectChange()
 
 	return true;
 } // End prepareForProjectChange
+#endif
 
 
 void

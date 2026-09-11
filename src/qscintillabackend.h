@@ -109,6 +109,12 @@ private:
 		QString *errorMessage
 	);
 
+	bool
+	reloadDocumentEntry(
+		DocumentEntry *entry,
+		QString *errorMessage
+	);
+
 	void
 	emitCurrentDocumentState();
 

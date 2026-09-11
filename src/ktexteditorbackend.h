@@ -81,6 +81,15 @@ public:
 	bool
 	isModified() const override;
 
+	int
+	fontPointSize() const override;
+
+	bool
+	setFontPointSize(
+		int pointSize,
+		QString *errorMessage = nullptr
+	) override;
+
 private slots:
 	void
 	handleCurrentTabChanged(
@@ -96,15 +105,6 @@ private slots:
 	documentModifiedChanged(
 		KTextEditor::Document *document
 	);
-
-	int
-	fontPointSize() const override;
-
-	bool
-	setFontPointSize(
-		int pointSize,
-		QString *errorMessage = nullptr
-	) override;
 
 private:
 	struct DocumentEntry
@@ -133,10 +133,18 @@ private:
 	);
 
 	void
+	applyFontPointSize(
+		KTextEditor::View *view
+	);
+
+	void
 	showEmptyState();
 
 	void
 	hideEmptyState();
+
+	void
+	removeEmptyStateCloseButton();
 
 	void
 	emitCurrentDocumentState();

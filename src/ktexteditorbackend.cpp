@@ -15,11 +15,13 @@
 #include <KTextEditor/View>
 
 #include <QFileInfo>
+#include <QLabel>
+#include <QFont>
+#include <QMenu>
 #include <QStringList>
+#include <QTabBar>
 #include <QTabWidget>
 #include <QUrl>
-#include <QLabel>
-#include <QMenu>
 
 #include "ktexteditorbackend.h"
 
@@ -42,8 +44,9 @@ KTextEditorBackend::KTextEditorBackend(
 
 	m_tabs->addTab(
 		m_emptyState,
-		QStringLiteral("Welcome")
+		QStringLiteral("KTextEditor")
 	);
+	removeEmptyStateCloseButton();
 
 	m_emptyState->setAlignment(
 		Qt::AlignCenter
@@ -99,21 +102,23 @@ KTextEditorBackend::documentEntryForPath(
 KTextEditorBackend::DocumentEntry *
 KTextEditorBackend::currentDocumentEntry() const
 {
-	const int currentIndex =
-		m_tabs->currentIndex();
+	QWidget *currentWidget =
+		m_tabs->currentWidget();
 
-	if (currentIndex < 0) {
+	if (currentWidget == nullptr) {
 		return nullptr;
 	}
 
-	for (DocumentEntry *entry : m_documents) {
-		if (entry->tabIndex == currentIndex) {
+	for (DocumentEntry *entry :
+			m_documents) {
+		if (entry != nullptr &&
+			entry->widget == currentWidget) {
 			return entry;
 		}
 	}
 
 	return nullptr;
-}
+} // End currentDocumentEntry
 
 
 int
@@ -129,18 +134,44 @@ KTextEditorBackend::setFontPointSize(
 	QString *errorMessage
 )
 {
-	Q_UNUSED(pointSize);
+	if (pointSize < 6 ||
+		pointSize > 36) {
+		if (errorMessage != nullptr) {
+			*errorMessage =
+				QStringLiteral(
+					"Font size must be between "
+					"6 and 36 points."
+				);
+		}
 
-	if (errorMessage != nullptr) {
-		*errorMessage =
-			QStringLiteral(
-				"Font-size changes are not implemented "
-				"for the KTextEditor backend."
-			);
+		return false;
 	}
 
-	return false;
-}
+	if (pointSize ==
+		m_fontPointSize) {
+		return true;
+	}
+
+	m_fontPointSize =
+		pointSize;
+
+	for (DocumentEntry *entry :
+			m_documents) {
+		if (entry == nullptr) {
+			continue;
+		}
+
+		applyFontPointSize(
+			entry->view
+		);
+	}
+
+	emit fontPointSizeChanged(
+		m_fontPointSize
+	);
+
+	return true;
+} // End setFontPointSize
 
 
 bool
@@ -222,7 +253,11 @@ KTextEditorBackend::openFile(
 		view
 	);
 
-	//QWidget *editorWidget =
+	applyFontPointSize(
+		view
+	);
+
+	// QWidget *editorWidget =
 	//	view->editorWidget();
 	QWidget *editorWidget =
 		view->editorWidget();
@@ -375,23 +410,57 @@ KTextEditorBackend::saveAllFiles(
 
 bool
 KTextEditorBackend::discardAllChanges(
-    QString *errorMessage
+	QString *errorMessage
 )
 {
-	Q_UNUSED(errorMessage);
+	for (DocumentEntry *entry :
+			m_documents) {
+		if (entry == nullptr ||
+			!entry->document->isModified()) {
+			continue;
+		}
 
-	for (DocumentEntry *entry : m_documents) {
-		if (entry->document->isModified()) {
-			entry->document->setModified(
-				false
+		KTextEditor::Document *document =
+			entry->document;
+
+		/*
+		 * Clear the modified flag before reloading so
+		 * KTextEditor does not present an additional
+		 * reload confirmation dialog. The application
+		 * has already obtained the user's Discard decision.
+		 */
+		document->setModified(
+			false
+		);
+
+		if (!document->documentReload()) {
+			/*
+			 * Restore the modified state if the reload
+			 * failed or was cancelled.
+			 */
+			document->setModified(
+				true
 			);
+
+			if (errorMessage != nullptr) {
+				*errorMessage =
+					QStringLiteral(
+						"The editor could not reload:\n%1"
+					).arg(
+						entry->filePath
+					);
+			}
+
+			emitCurrentDocumentState();
+
+			return false;
 		}
 	}
 
 	emitCurrentDocumentState();
 
 	return true;
-}
+} // End discardAllChanges
 
 
 QString
@@ -480,24 +549,33 @@ KTextEditorBackend::emitCurrentDocumentState()
 
 void
 KTextEditorBackend::handleTabCloseRequested(
-    int index
+	int index
 )
 {
-	if (m_emptyState != nullptr &&
-		m_tabs->widget(index) == m_emptyState) {
-		return;
-	}
-
 	if (index < 0 ||
 		index >= m_tabs->count()) {
 		return;
 	}
 
-	DocumentEntry *entry = nullptr;
+	QWidget *requestedWidget =
+		m_tabs->widget(index);
 
-	for (DocumentEntry *candidate : m_documents) {
-		if (candidate->tabIndex == index) {
-			entry = candidate;
+	if (requestedWidget == nullptr ||
+		requestedWidget == m_emptyState) {
+		return;
+	}
+
+	DocumentEntry *entry =
+		nullptr;
+
+	for (DocumentEntry *candidate :
+			m_documents) {
+		if (candidate != nullptr &&
+			candidate->widget ==
+				requestedWidget) {
+			entry =
+				candidate;
+
 			break;
 		}
 	}
@@ -505,6 +583,10 @@ KTextEditorBackend::handleTabCloseRequested(
 	if (entry == nullptr) {
 		return;
 	}
+
+	m_tabs->setCurrentIndex(
+		index
+	);
 
 	if (entry->document->isModified()) {
 		emit editorError(
@@ -516,19 +598,29 @@ KTextEditorBackend::handleTabCloseRequested(
 		return;
 	}
 
-	closeCurrentFile();
-}
+	QString errorMessage;
+
+	if (!closeCurrentFile(
+			&errorMessage
+		)) {
+		if (!errorMessage.isEmpty()) {
+			emit editorError(
+				errorMessage
+			);
+		}
+	}
+} // End handleTabCloseRequested
 
 
 bool
 KTextEditorBackend::closeCurrentFile(
-    QString *errorMessage
+	QString *errorMessage
 )
 {
-	const int index =
-		m_tabs->currentIndex();
+	DocumentEntry *entry =
+		currentDocumentEntry();
 
-	if (index < 0) {
+	if (entry == nullptr) {
 		if (errorMessage != nullptr) {
 			*errorMessage =
 				QStringLiteral(
@@ -536,19 +628,6 @@ KTextEditorBackend::closeCurrentFile(
 				);
 		}
 
-		return false;
-	}
-
-	DocumentEntry *entry = nullptr;
-
-	for (DocumentEntry *candidate : m_documents) {
-		if (candidate->tabIndex == index) {
-			entry = candidate;
-			break;
-		}
-	}
-
-	if (entry == nullptr) {
 		return false;
 	}
 
@@ -563,31 +642,56 @@ KTextEditorBackend::closeCurrentFile(
 		return false;
 	}
 
-	m_documents.removeOne(entry);
+	const int tabIndex =
+		m_tabs->indexOf(
+			entry->widget
+		);
 
-	m_tabs->removeTab(index);
+	if (tabIndex < 0) {
+		if (errorMessage != nullptr) {
+			*errorMessage =
+				QStringLiteral(
+					"The editor tab could not be found."
+				);
+		}
+
+		return false;
+	}
+
+	m_documents.removeOne(
+		entry
+	);
+
+	m_tabs->removeTab(
+		tabIndex
+	);
 
 	entry->document->deleteLater();
+
 	entry->widget->deleteLater();
 
 	delete entry;
 
-	if (m_documents.isEmpty())
-		showEmptyState();
-
-	for (int position = 0;
-		 position < m_documents.size();
-		 ++position) {
-		m_documents.at(position)->tabIndex =
+	for (DocumentEntry *remaining :
+			m_documents) {
+		remaining->tabIndex =
 			m_tabs->indexOf(
-				m_documents.at(position)->widget
+				remaining->widget
 			);
+	}
+
+	if (m_documents.isEmpty()) {
+		showEmptyState();
+	} else {
+		m_tabs->setTabsClosable(
+			true
+		);
 	}
 
 	emitCurrentDocumentState();
 
 	return true;
-}
+} // End closeCurrentFile
 
 
 bool
@@ -646,29 +750,29 @@ KTextEditorBackend::hideEmptyState()
 void
 KTextEditorBackend::showEmptyState()
 {
-	if (m_emptyState != nullptr)
+	if (m_emptyState != nullptr) {
 		return;
+	}
 
 	m_emptyState =
 		createEmptyStateWidget();
 
-	m_emptyState->setAlignment(
-		Qt::AlignCenter
+	const int tabIndex =
+		m_tabs->addTab(
+			m_emptyState,
+			QStringLiteral("KTextEditor")
+		);
+
+	m_tabs->setCurrentIndex(
+			tabIndex
 	);
 
-	m_emptyState->setMinimumHeight(
-		160
+	m_tabs->setTabsClosable(
+		true
 	);
 
-	m_tabs->addTab(
-		m_emptyState,
-		QStringLiteral("Welcome")
-	);
-
-	m_tabs->setCurrentWidget(
-		m_emptyState
-	);
-}
+	removeEmptyStateCloseButton();
+} // End showEmptyState
 
 
 QLabel *
@@ -747,3 +851,81 @@ KTextEditorBackend::configureView(
 	}
 }
 
+
+void
+KTextEditorBackend::applyFontPointSize(
+	KTextEditor::View *view
+)
+{
+	if (view == nullptr) {
+		return;
+	}
+
+	const QString fontKey =
+		QStringLiteral("font");
+
+	if (!view->configKeys().contains(
+			fontKey
+		)) {
+		return;
+	}
+
+	QVariant fontValue =
+		view->configValue(
+			fontKey
+		);
+
+	QFont editorFont =
+		fontValue.value<QFont>();
+
+	if (editorFont.pointSize() <= 0) {
+		editorFont =
+			KTextEditor::Editor::instance()->font();
+	}
+
+	editorFont.setPointSize(
+		m_fontPointSize
+	);
+
+	view->setConfigValue(
+		fontKey,
+		editorFont
+	);
+} // End applyFontPointSize
+
+
+void
+KTextEditorBackend::removeEmptyStateCloseButton()
+{
+	if (m_emptyState == nullptr) {
+		return;
+	}
+
+	const int tabIndex =
+		m_tabs->indexOf(
+			m_emptyState
+		);
+
+	if (tabIndex < 0) {
+		return;
+	}
+
+	QTabBar *tabBar =
+		m_tabs->tabBar();
+
+	if (tabBar == nullptr) {
+		return;
+	}
+
+	tabBar->setTabButton(
+		tabIndex,
+		QTabBar::LeftSide,
+		nullptr
+	);
+
+	tabBar->setTabButton(
+		tabIndex,
+		QTabBar::RightSide,
+		nullptr
+	);
+} // End removeEmptyStateCloseButton
