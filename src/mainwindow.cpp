@@ -1258,9 +1258,16 @@ MainWindow::prepareForProjectChange()
 
 		QString errorMessage;
 
-		if (!editor->discardAllChanges(
-				&errorMessage
-			)) {
+		bool discardAllResults =
+				editor->discardAllChanges(&errorMessage);
+
+//
+qDebug()
+	<< "in MainWindow::prepareForProjectChange()"
+	<< "checking discardAllChanges():"
+	<< discardAllResults;
+//
+		if (!discardAllResults) {
 			QMessageBox::critical(
 				this,
 				QStringLiteral(
@@ -1315,56 +1322,6 @@ MainWindow::prepareForProjectChange()
 
 	return true;
 } // End prepareForProjectChange
-
-#if 0
-bool
-MainWindow::prepareForProjectChange()
-{
-	if (!confirmEditorChanges()) {
-		return false;
-	}
-
-	/*
-	 * If modified files still exist, the user selected
-	 * Discard in confirmEditorChanges().
-	 */
-	if (editor->hasModifiedFiles()) {
-		QString errorMessage;
-
-		if (!editor->discardAllChanges(
-				&errorMessage
-			)) {
-			QMessageBox::critical(
-				this,
-				QStringLiteral(
-					"Cannot Discard Changes"
-				),
-				errorMessage
-			);
-
-			return false;
-		}
-	}
-
-	QString errorMessage;
-
-	if (!editor->closeAllFiles(
-			&errorMessage
-		)) {
-		QMessageBox::critical(
-			this,
-			QStringLiteral(
-				"Cannot Close Editor Files"
-			),
-			errorMessage
-		);
-
-		return false;
-	}
-
-	return true;
-} // End prepareForProjectChange
-#endif
 
 
 void

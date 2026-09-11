@@ -525,6 +525,10 @@ QScintillaBackend::reloadDocumentEntry(
 	QString *errorMessage
 )
 {
+//
+qDebug()
+	<< "Entering reloadDocumentEntry()";
+//
 	if (entry == nullptr) {
 		if (errorMessage != nullptr) {
 			*errorMessage =
@@ -543,6 +547,16 @@ QScintillaBackend::reloadDocumentEntry(
 	if (!file.open(
 			QIODevice::ReadOnly
 		)) {
+//
+qDebug()
+	<< "in reloadDocumentEntry()"
+	<< "QScintilla read-only branch:"
+	<< entry->filePath
+	<< "file open:"
+	<< file.isOpen()
+	<< "file size:"
+	<< file.size();
+//
 		if (errorMessage != nullptr) {
 			*errorMessage =
 				file.errorString();
@@ -554,10 +568,24 @@ QScintillaBackend::reloadDocumentEntry(
 	const QSignalBlocker signalBlocker(
 		entry->editor
 	);
-
+//
+qDebug()
+	<< "in reloadDocumentEntry()"
+	<< "about to call read(&file)";
+//
 	if (!entry->editor->read(
 			&file
 		)) {
+//
+qDebug()
+	<< "in reloadDocumentEntry()"
+	<< "QScintilla reload file:"
+	<< entry->filePath
+	<< "file open:"
+	<< file.isOpen()
+	<< "file size:"
+	<< file.size();
+//
 		if (errorMessage != nullptr) {
 			*errorMessage =
 				QStringLiteral(
@@ -572,8 +600,21 @@ QScintillaBackend::reloadDocumentEntry(
 		return false;
 	}
 
-	file.close();
+//
+const bool readSucceeded =
+entry->editor->read(
+&file
+);
 
+qDebug()
+	<< "in reloadDocumentEntry()"
+	<< "QScintilla reload read result:"
+	<< readSucceeded
+	<< "file:"
+	<< entry->filePath;
+//
+
+	file.close();
 	/*
 	 * read() should establish a clean document state.
 	 * Keep this explicit as a safety measure.
@@ -595,36 +636,49 @@ QScintillaBackend::discardAllChanges(
 	QString *errorMessage
 )
 {
+//
 qDebug()
 	<< "QScintilla discardAllChanges(): begin"
 	<< "modified files:"
 	<< hasModifiedFiles();
-
+//
 	for (DocumentEntry *entry :
 			m_documents) {
 		if (entry == nullptr ||
 			!entry->editor->isModified()) {
 			continue;
 		}
+//
 qDebug()
 	<< "Document:"
 	<< entry->filePath
 	<< "modified:"
 	<< entry->editor->isModified();
-		if (!reloadDocumentEntry(
+//
+		bool reloadResult = reloadDocumentEntry(
 				entry,
 				errorMessage
-			)) {
+				);
+//
+qDebug()
+	<< "in discardAllChanges()"
+	<< "results from reloadDocumentEntry():"
+	<< reloadResult;
+//
+		if (!reloadResult) {
 			emitCurrentDocumentState();
-
 			return false;
 		}
 	}
 
-	for (DocumentEntry *entry :
-			m_documents) {
-		if (entry != nullptr &&
-			entry->editor->isModified()) {
+	for (DocumentEntry *entry : m_documents) {
+
+		if (entry != nullptr && entry->editor->isModified()) {
+//
+qDebug()
+	<< "if we get here in discardAllChanges()"
+	<< "it will return false";
+//
 			if (errorMessage != nullptr) {
 				*errorMessage =
 					QStringLiteral(
