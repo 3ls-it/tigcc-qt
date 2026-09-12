@@ -26,8 +26,6 @@
 
 #include "qscintillabackend.h"
 
-#include <QDebug>
-
 
 
 QScintillaBackend::QScintillaBackend(

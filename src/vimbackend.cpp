@@ -27,8 +27,6 @@
 
 #include "vimbackend.h"
 
-//#include <QDebug>
-
 
 VimBackend::VimBackend(
 	QWidget *parent

@@ -11,7 +11,6 @@
 
 #include <QApplication>
 #include <QColor>
-#include <QDebug>
 #include <QPalette>
 #include <QStyleFactory>
 
