@@ -441,6 +441,19 @@ MainWindow::connectEditorBackend()
 			);
 		}
 	);
+
+	connect(
+		editor,
+		&EditorBackend::editorError,
+		this,
+		[this](const QString &message) {
+			QMessageBox::warning(
+				this,
+				QStringLiteral("Editor Error"),
+				message
+			);
+		}
+	);
 } // End connectEditorBackend
 
 
@@ -1120,13 +1133,6 @@ MainWindow::updateEditorInterface()
 bool
 MainWindow::confirmEditorChanges()
 {
-qDebug()
-	<< "confirmEditorChanges(): entered"
-	<< "has modified files:"
-	<< editor->hasModifiedFiles()
-	<< "current file:"
-	<< editor->currentFilePath();
-
 	if (!editor->hasModifiedFiles()) {
 		return true;
 	}
@@ -1171,33 +1177,17 @@ qDebug()
 					errorMessage
 				);
 
-				qDebug()
-					<< "confirmEditorChanges(): "
-					<< "Save failed";
-
 				return false;
 			}
-
-			qDebug()
-				<< "confirmEditorChanges(): "
-				<< "returning Save";
 
 			return true;
 		}
 
 		case QMessageBox::Discard:
-			qDebug()
-				<< "confirmEditorChanges(): "
-				<< "returning Discard";
-
 			return true;
 
 		case QMessageBox::Cancel:
 		default:
-			qDebug()
-				<< "confirmEditorChanges(): "
-				<< "returning Cancel";
-
 			return false;
 	}
 #if 0
@@ -1234,39 +1224,18 @@ qDebug()
 bool
 MainWindow::prepareForProjectChange()
 {
-	qDebug()
-		<< "prepareForProjectChange(): entered";
-
 	if (!confirmEditorChanges()) {
-		qDebug()
-			<< "prepareForProjectChange(): "
-			<< "confirmEditorChanges() returned false";
 
 		return false;
 	}
 
-	qDebug()
-		<< "prepareForProjectChange(): "
-		<< "initial guard passed";
-
 	if (editor->hasModifiedFiles()) {
-		qDebug()
-			<< "prepareForProjectChange(): "
-			<< "before discard"
-			<< "has modified files:"
-			<< editor->hasModifiedFiles();
 
 		QString errorMessage;
 
 		bool discardAllResults =
 				editor->discardAllChanges(&errorMessage);
 
-//
-qDebug()
-	<< "in MainWindow::prepareForProjectChange()"
-	<< "checking discardAllChanges():"
-	<< discardAllResults;
-//
 		if (!discardAllResults) {
 			QMessageBox::critical(
 				this,
@@ -1276,25 +1245,10 @@ qDebug()
 				errorMessage
 			);
 
-			qDebug()
-				<< "prepareForProjectChange(): "
-				<< "discard failed";
-
 			return false;
 		}
 
-		qDebug()
-			<< "prepareForProjectChange(): "
-			<< "after discard"
-			<< "has modified files:"
-			<< editor->hasModifiedFiles();
 	}
-
-	qDebug()
-		<< "prepareForProjectChange(): "
-		<< "before closeAllFiles"
-		<< "has modified files:"
-		<< editor->hasModifiedFiles();
 
 	QString errorMessage;
 
@@ -1309,16 +1263,8 @@ qDebug()
 			errorMessage
 		);
 
-		qDebug()
-			<< "prepareForProjectChange(): "
-			<< "closeAllFiles() failed";
-
 		return false;
 	}
-
-	qDebug()
-		<< "prepareForProjectChange(): "
-		<< "completed successfully";
 
 	return true;
 } // End prepareForProjectChange
