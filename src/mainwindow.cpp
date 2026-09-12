@@ -68,7 +68,7 @@ MainWindow::MainWindow(QWidget *parent)
 		QStringLiteral("TIGCC-Qt")
     );
 
-    resize(1200, 829);
+    resize(1440, 1024);
 
 	updateProjectInterface();
 
