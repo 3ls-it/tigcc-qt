@@ -17,7 +17,6 @@
 
 
 
-
 class QWidget;
 
 class EditorBackend : public QObject

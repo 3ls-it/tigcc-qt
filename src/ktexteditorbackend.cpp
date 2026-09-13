@@ -174,6 +174,7 @@ KTextEditorBackend::setFontPointSize(
 } // End setFontPointSize
 
 
+
 bool
 KTextEditorBackend::openFile(
 	const QString &filePath,
@@ -191,9 +192,11 @@ KTextEditorBackend::openFile(
 		);
 
 	if (existingEntry != nullptr) {
-		m_tabs->setCurrentIndex(
-			existingEntry->tabIndex
+		m_tabs->setCurrentWidget(
+			existingEntry->widget
 		);
+
+		emitCurrentDocumentState();
 
 		return true;
 	}
@@ -202,13 +205,16 @@ KTextEditorBackend::openFile(
 		KTextEditor::Editor::instance();
 
 	KTextEditor::Document *document =
-		editor->createDocument(this);
+		editor->createDocument(
+			this
+		);
 
 	if (document == nullptr) {
 		if (errorMessage != nullptr) {
 			*errorMessage =
 				QStringLiteral(
-					"The KTextEditor document could not be created."
+					"The KTextEditor document "
+					"could not be created."
 				);
 		}
 
@@ -220,13 +226,16 @@ KTextEditorBackend::openFile(
 			normalizedPath
 		);
 
-	if (!document->openUrl(fileUrl)) {
+	if (!document->openUrl(
+			fileUrl
+		)) {
 		document->deleteLater();
 
 		if (errorMessage != nullptr) {
 			*errorMessage =
 				QStringLiteral(
-					"The editor could not open the file."
+					"The editor could not open "
+					"the file."
 				);
 		}
 
@@ -234,7 +243,9 @@ KTextEditorBackend::openFile(
 	}
 
 	KTextEditor::View *view =
-		document->createView(m_tabs);
+		document->createView(
+			m_tabs
+		);
 
 	if (view == nullptr) {
 		document->deleteLater();
@@ -242,7 +253,42 @@ KTextEditorBackend::openFile(
 		if (errorMessage != nullptr) {
 			*errorMessage =
 				QStringLiteral(
-					"The editor view could not be created."
+					"The KTextEditor view "
+					"could not be created."
+				);
+		}
+
+		return false;
+	}
+
+	QWidget *editorWidget =
+		view->editorWidget();
+
+	if (editorWidget == nullptr) {
+		document->deleteLater();
+
+		if (errorMessage != nullptr) {
+			*errorMessage =
+				QStringLiteral(
+					"The editor widget "
+					"could not be obtained."
+				);
+		}
+
+		return false;
+	}
+
+	QWidget *viewWidget =
+		editorWidget->parentWidget();
+
+	if (viewWidget == nullptr) {
+		document->deleteLater();
+
+		if (errorMessage != nullptr) {
+			*errorMessage =
+				QStringLiteral(
+					"The complete editor view "
+					"widget could not be obtained."
 				);
 		}
 
@@ -257,35 +303,14 @@ KTextEditorBackend::openFile(
 		view
 	);
 
-	// QWidget *editorWidget =
-	//	view->editorWidget();
-	QWidget *editorWidget =
-		view->editorWidget();
-
-	QWidget *viewWidget =
-		editorWidget->parentWidget();
-
-	if (editorWidget == nullptr ||
-			viewWidget == nullptr) {
-		document->deleteLater();
-
-		if (errorMessage != nullptr) {
-			*errorMessage =
-				QStringLiteral(
-					"The editor widget could not be obtained."
-				);
-		}
-
-		return false;
-	}
-
 	const QString tabLabel =
 		QFileInfo(
 			normalizedPath
 		).fileName();
 
-	if (m_documents.isEmpty())
+	if (m_documents.isEmpty()) {
 		hideEmptyState();
+	}
 
 	const int tabIndex =
 		m_tabs->addTab(
@@ -302,7 +327,9 @@ KTextEditorBackend::openFile(
 			tabIndex
 		};
 
-	m_documents.append(entry);
+	m_documents.append(
+		entry
+	);
 
 	connect(
 		document,
@@ -311,20 +338,14 @@ KTextEditorBackend::openFile(
 		&KTextEditorBackend::documentModifiedChanged
 	);
 
-	m_tabs->setCurrentIndex(
-		tabIndex
+	m_tabs->setCurrentWidget(
+		viewWidget
 	);
 
-	emit currentFileChanged(
-		normalizedPath
-	);
-
-	emit modificationChanged(
-		document->isModified()
-	);
+	emitCurrentDocumentState();
 
 	return true;
-}// End openFile()
+} // End openFile
 
 
 bool

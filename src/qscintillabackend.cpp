@@ -212,7 +212,7 @@ QScintillaBackend::showEmptyState()
 
 	m_tabs->addTab(
 		m_emptyState,
-		QStringLiteral("Welcome")
+		QStringLiteral("QScintilla")
 	);
 
 	m_tabs->setCurrentWidget(
@@ -258,8 +258,8 @@ QScintillaBackend::openFile(
 		);
 
 	if (existingEntry != nullptr) {
-		m_tabs->setCurrentIndex(
-			existingEntry->tabIndex
+		m_tabs->setCurrentWidget(
+			existingEntry->widget
 		);
 
 		emitCurrentDocumentState();

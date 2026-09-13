@@ -219,7 +219,7 @@ VimBackend::restoreWelcomeTab()
 		) < 0) {
 		m_tabs->addTab(
 			m_welcomeWidget,
-			QStringLiteral("Welcome")
+			QStringLiteral("Vim")
 		);
 	}
 
