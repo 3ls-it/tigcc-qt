@@ -410,6 +410,10 @@ VimBackend::readVimState(
 	m_lastVimEvent =
 		reportedEvent;
 
+	updateTabTitle(
+		session
+	);
+
 	// Acknowlege pending save
 	if (m_lastVimEvent ==
 			QStringLiteral("write") &&
@@ -498,6 +502,8 @@ VimBackend::readVimSaveAcknowledgement(
 
 	session->modified = false;
 
+	updateTabTitle(session);
+
 	if (m_saveLoop != nullptr) {
 		m_saveLoop->quit();
 	}
@@ -566,14 +572,13 @@ VimBackend::readVimDiscardAcknowledgement(
 		return;
 	}
 
-	session->modified =
-		false;
+	session->modified = false;
 
-	m_discardPending =
-		false;
+	updateTabTitle(session);
 
-	m_discardSucceeded =
-		true;
+	m_discardPending = false;
+
+	m_discardSucceeded = true;
 
 	if (m_discardLoop != nullptr) {
 		m_discardLoop->quit();
@@ -1548,3 +1553,43 @@ VimBackend::setFontPointSize(
 
 	return true;
 } // End setFontPointSize
+
+
+void
+VimBackend::updateTabTitle(
+    VimSession *session
+)
+{
+    if (session == nullptr ||
+        session->terminal == nullptr) {
+        return;
+    }
+
+    const int tabIndex =
+        m_tabs->indexOf(
+            session->terminal
+        );
+
+    if (tabIndex < 0) {
+        return;
+    }
+
+    QString title =
+        QFileInfo(
+            session->filePath
+        ).fileName();
+
+    if (session->modified) {
+        title.append(
+            QStringLiteral(" *")
+        );
+    }
+
+    m_tabs->setTabText(
+        tabIndex,
+        title
+    );
+
+    session->tabIndex =
+        tabIndex;
+} // End updateTabTitle

@@ -108,6 +108,11 @@ private:
 	) const;
 
 	void
+	updateTabTitle(
+		VimSession *session
+	);
+
+	void
 	handleTabCloseRequested(
 		int index
 	);

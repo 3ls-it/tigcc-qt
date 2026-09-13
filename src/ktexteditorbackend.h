@@ -128,6 +128,11 @@ private:
 	createEmptyStateWidget();
 
 	void
+	updateTabTitle(
+		DocumentEntry *entry
+	);
+
+	void
 	configureView(
 		KTextEditor::View *view
 	);

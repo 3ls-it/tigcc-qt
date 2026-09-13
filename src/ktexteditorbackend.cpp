@@ -528,12 +528,26 @@ KTextEditorBackend::documentModifiedChanged(
     KTextEditor::Document *document
 )
 {
+#if 0
 	DocumentEntry *entry =
 		currentDocumentEntry();
 
 	if (entry == nullptr ||
 		entry->document != document) {
 		return;
+	}
+#endif
+
+	for (DocumentEntry *entry :
+			m_documents) {
+		if (entry != nullptr &&
+			entry->document == document) {
+			updateTabTitle(
+				entry
+			);
+
+			break;
+		}
 	}
 
 	emitCurrentDocumentState();
@@ -950,3 +964,43 @@ KTextEditorBackend::removeEmptyStateCloseButton()
 		nullptr
 	);
 } // End removeEmptyStateCloseButton
+
+
+void
+KTextEditorBackend::updateTabTitle(
+    DocumentEntry *entry
+)
+{
+    if (entry == nullptr) {
+        return;
+    }
+
+    const int tabIndex =
+        m_tabs->indexOf(
+            entry->widget
+        );
+
+    if (tabIndex < 0) {
+        return;
+    }
+
+    QString title =
+        QFileInfo(
+            entry->filePath
+        ).fileName();
+
+    if (entry->document->isModified()) {
+        title.append(
+            QStringLiteral(" *")
+        );
+    }
+
+    m_tabs->setTabText(
+        tabIndex,
+        title
+    );
+
+    entry->tabIndex =
+        tabIndex;
+} // End updateTabTitle
+

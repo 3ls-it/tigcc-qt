@@ -24,15 +24,17 @@ main(int argc, char *argv[])
 	Appearance::applyDarkTheme();
 
 	application.setApplicationName(
-	QStringLiteral("TIGCC-Qt")
-	);
-
-	application.setApplicationDisplayName(
-	QStringLiteral("TIGCC-Qt")
+		QStringLiteral("TIGCC-Qt")
 	);
 
 	application.setApplicationVersion(
-	QStringLiteral("0.1.2")
+		QStringLiteral("0.2.0-alpha")
+	);
+
+	application.setApplicationDisplayName(
+		QStringLiteral("TIGCC-Qt") +
+		QStringLiteral(" v") +
+		application.applicationVersion()
 	);
 
 	MainWindow mainWindow;
