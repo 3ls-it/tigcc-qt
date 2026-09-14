@@ -117,11 +117,33 @@ MainWindow::MainWindow(QWidget *parent)
 		false
 	);
 
+	// File save
 	connect(
 		saveFileAction,
 		&QAction::triggered,
 		this,
 		&MainWindow::saveCurrentFile
+	);
+
+	// Save all
+	auto *saveAllFilesAction =
+		fileMenu->addAction(
+			QStringLiteral("Save All")
+		);
+
+	saveAllFilesAction->setShortcut(
+		QKeySequence(
+			Qt::CTRL |
+			Qt::SHIFT |
+			Qt::Key_S
+		)
+	);
+
+	connect(
+		saveAllFilesAction,
+		&QAction::triggered,
+		this,
+		&MainWindow::saveAllFiles
 	);
 
 	// File>Quit
@@ -703,14 +725,31 @@ MainWindow::saveCurrentProject()
 {
 	if (currentProjectFile.isEmpty()) {
 		statusBar()->showMessage(
-			QStringLiteral("No project file is associated")
+			QStringLiteral(
+				"No project file is associated"
+			)
+		);
+
+		return;
+	}
+
+	QString errorMessage;
+
+	if (!editor->saveAllFiles(
+			&errorMessage
+		)) {
+		QMessageBox::critical(
+			this,
+			QStringLiteral(
+				"Cannot Save Files"
+			),
+			errorMessage
 		);
 
 		return;
 	}
 
 	ProjectManager projectManager;
-	QString errorMessage;
 
 	if (!projectManager.saveProject(
 			currentProject,
@@ -719,17 +758,23 @@ MainWindow::saveCurrentProject()
 		)) {
 		QMessageBox::critical(
 			this,
-			QStringLiteral("Cannot Save Project"),
+			QStringLiteral(
+				"Cannot Save Project"
+			),
 			errorMessage
 		);
 
 		return;
 	}
 
+	updateEditorInterface();
+
 	statusBar()->showMessage(
-		QStringLiteral("Project saved")
+		QStringLiteral(
+			"Project and editor files saved"
+		)
 	);
-}
+} // End saveCurrentProject
 
 
 void
@@ -1076,6 +1121,35 @@ MainWindow::saveCurrentFile()
 		QStringLiteral("File saved")
 	);
 } // End saveCurrentFile
+
+
+void
+MainWindow::saveAllFiles()
+{
+	QString errorMessage;
+
+	if (!editor->saveAllFiles(
+			&errorMessage
+		)) {
+		QMessageBox::critical(
+			this,
+			QStringLiteral(
+				"Cannot Save Files"
+			),
+			errorMessage
+		);
+
+		return;
+	}
+
+	updateEditorInterface();
+
+	statusBar()->showMessage(
+		QStringLiteral(
+			"All editor files saved"
+		)
+	);
+} // End saveAllFiles
 
 
 void

@@ -90,6 +90,9 @@ private:
 	saveCurrentFile();
 
 	void
+	saveAllFiles();
+
+	void
 	updateEditorInterface();
 
 	void
