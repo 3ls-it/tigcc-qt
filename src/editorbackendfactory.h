@@ -23,10 +23,10 @@ class QWidget;
 enum class EditorBackendType
 {
 	QScintilla,
+	Vim,
 #ifdef USE_KTEXTEDITOR
-	KTextEditor,
+	KTextEditor
 #endif
-	Vim
 };
 
 EditorBackend *

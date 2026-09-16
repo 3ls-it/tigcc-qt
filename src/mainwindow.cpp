@@ -37,23 +37,29 @@
 
 
 
-MainWindow::MainWindow(QWidget *parent)
+MainWindow::MainWindow(
+		Configuration &configuration,
+		QWidget *parent
+)
 	: QMainWindow(parent),
 	  currentProject(
 		  QStringLiteral("Untitled"),
 		  QString()
 	  ),
+	  m_configuration(
+		  &configuration
+	  ),
 	  projectTree(new ProjectTreeWidget(this)),
 	  editor(
 		  createEditorBackend(
-			  EditorBackendType::QScintilla,
+			  configuration.defaultEditor(),
 			  this
 		  )
 	  ),
 	  buildOutput(new BuildOutputWidget(this)),
 	  rightSplitter(nullptr),
 	  editorBackendType(
-		  EditorBackendType::QScintilla
+		  configuration.defaultEditor()
 	  ),
 	  qscintillaBackendAction(nullptr),
 #ifdef USE_KTEXTEDITOR
@@ -418,6 +424,17 @@ MainWindow::MainWindow(QWidget *parent)
     );
 
 	connectEditorBackend();
+
+	QString errorMessage;
+
+	if (!editor->setFontPointSize(
+			configuration.editorFontPointSize(),
+			&errorMessage
+		)) {
+		statusBar()->showMessage(
+			errorMessage
+		);
+	}
 } // End constructor
  
 
@@ -544,13 +561,20 @@ MainWindow::switchEditorBackend(
 	oldEditorWidget->deleteLater();
 	editor->deleteLater();
 
-	editor =
-		newEditor;
+	editor = newEditor;
 
-	editorBackendType =
-		type;
+	editorBackendType = type;
+
+	if (m_configuration != nullptr) {
+		m_configuration->setDefaultEditor(
+			type
+		);
+
+		saveConfiguration();
+	}
 
 	updateEditorBackendActions();
+
 	connectEditorBackend();
 
 	if (editor->fontPointSize() !=
@@ -1367,6 +1391,14 @@ MainWindow::adjustEditorFontSize(
 		return;
 	}
 
+	if (m_configuration != nullptr) {
+		m_configuration->setEditorFontPointSize(
+			editor->fontPointSize()
+		);
+
+		saveConfiguration();
+	}
+
 	statusBar()->showMessage(
 		QStringLiteral(
 			"Editor font size: %1 pt"
@@ -1374,7 +1406,7 @@ MainWindow::adjustEditorFontSize(
 			editor->fontPointSize()
 		)
 	);
-}
+} // End adjustEditorFontSize
 
 
 void
@@ -1388,3 +1420,26 @@ MainWindow::closeEvent(
 		event->ignore();
 	}
 }
+
+
+void
+MainWindow::saveConfiguration()
+{
+	if (m_configuration == nullptr) {
+		return;
+	}
+
+	QString errorMessage;
+
+	if (!m_configuration->save(
+			&errorMessage
+		)) {
+		QMessageBox::warning(
+			this,
+			QStringLiteral(
+				"Cannot Save Configuration"
+			),
+			errorMessage
+		);
+	}
+} // End saveConfiguration

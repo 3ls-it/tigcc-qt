@@ -15,6 +15,7 @@
 #include <QMainWindow>
 #include <QString>
 
+#include "configuration.h"
 #include "editorbackendfactory.h"
 #include "project.h"
 
@@ -30,7 +31,10 @@ class QSplitter;
 class MainWindow : public QMainWindow
 {
 public:
-    explicit MainWindow(QWidget *parent = nullptr);
+    explicit MainWindow(
+			Configuration &configuration,
+			QWidget *parent = nullptr
+	);
 
 	// Project file types
 	enum class FType
@@ -47,6 +51,8 @@ protected:
 	) override;
 
 private:
+	void saveConfiguration();
+
 	void updateEditorBackendActions();
 
 	void createNewProject();
@@ -106,6 +112,7 @@ private:
 	QAction *ktextEditorBackendAction;
 	Project currentProject;
 	QString currentProjectFile;
+	Configuration *m_configuration;
 	ProjectTreeWidget *projectTree;
 	EditorBackend *editor;
 	BuildOutputWidget *buildOutput;

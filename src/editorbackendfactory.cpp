@@ -42,6 +42,6 @@ createEditorBackend(
 				parent
 			);
 #endif
-        }
+	}
 	return nullptr;
 }

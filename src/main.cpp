@@ -12,6 +12,7 @@
 #include <QApplication>
 
 #include "appearance.h"
+#include "configuration.h"
 #include "mainwindow.h"
 
 
@@ -24,7 +25,7 @@ main(int argc, char *argv[])
 	Appearance::applyDarkTheme();
 
 	application.setApplicationName(
-		QStringLiteral("TIGCC-Qt")
+		QStringLiteral("tigcc-qt")
 	);
 
 	application.setApplicationVersion(
@@ -37,7 +38,22 @@ main(int argc, char *argv[])
 		application.applicationVersion()
 	);
 
-	MainWindow mainWindow;
+	Configuration configuration;
+
+	QString configurationError;
+
+	if (!configuration.load(
+			&configurationError
+		)) {
+		qWarning()
+			<< "Could not load configuration:"
+			<< configurationError;
+	}
+
+	MainWindow mainWindow(
+		configuration
+	);
+
 	mainWindow.show();
 
 	return application.exec();

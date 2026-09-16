@@ -57,6 +57,9 @@ set (SOURCES
     src/mainwindow.cpp
     src/mainwindow.h
 
+    src/configuration.cpp
+    src/configuration.h
+
     src/project.cpp
     src/project.h
 
