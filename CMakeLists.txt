@@ -7,7 +7,7 @@ project(TIGCC-Qt
 
 set(
     TIGCC_QT_RELEASE_LABEL
-    "0.2.1-alpha"
+    "0.2.3-alpha"
 )
 
 set(CMAKE_CXX_STANDARD 17)
@@ -32,7 +32,7 @@ find_package(
     REQUIRED
 )
 
-option(ENABLE_KTEXTEDITOR "Enable KTextEditor backend")
+option(ENABLE_KTEXTEDITOR "Enable KTextEditor backend" OFF)
 
 find_package(
 	qtermwidget6
@@ -41,11 +41,16 @@ find_package(
 )
 
 if (ENABLE_KTEXTEDITOR)
-    set(USE_KTEXTEDITOR 1)
     find_package(
         KF6TextEditor
         REQUIRED
     )
+	list(
+			APPEND
+			SOURCES
+			src/ktexteditorbackend.cpp
+			src/ktexteditorbackend.h
+	)
 endif (ENABLE_KTEXTEDITOR)
 
 qt_standard_project_setup()
@@ -98,6 +103,14 @@ endif(ENABLE_KTEXTEDITOR)
 qt_add_executable(tigcc-qt
     ${SOURCES}
 )
+
+if(ENABLE_KTEXTEDITOR)
+	target_compile_definitions(
+		tigcc-qt
+		PRIVATE
+			USE_KTEXTEDITOR
+	)
+endif()
 
 target_include_directories(tigcc-qt PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
 

@@ -1419,6 +1419,10 @@ MainWindow::closeEvent(
 	} else {
 		event->ignore();
 	}
+
+	saveConfiguration();
+
+	event->accept();
 }
 
 
