@@ -15,6 +15,7 @@
 #include <QList>
 
 #include "editorbackend.h"
+#include "qscintillatheme.h"
 
 
 
@@ -147,6 +148,7 @@ private:
 	QLabel *m_emptyState;
 	QList<DocumentEntry *> m_documents;
 	int m_fontPointSize;
+	QScintillaTheme m_theme;
 };
 
 #endif // TIGCC_QT_QSCINTILLABACKEND_H

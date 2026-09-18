@@ -1,6 +1,6 @@
 /*
  * @file    src/qscintillabackend.cpp
- * @brief   
+ * @brief   Provided the QScintilla editor backend
  *
  * This file is part of TIGCC-Qt.
  *
@@ -34,7 +34,8 @@ QScintillaBackend::QScintillaBackend(
 	: EditorBackend(parent),
 	  m_tabs(new QTabWidget(parent)),
 	  m_emptyState(nullptr),
-	  m_fontPointSize(12)
+	  m_fontPointSize(12),
+	  m_theme(QScintillaTheme::tigccDark())
 {
 	m_tabs->setDocumentMode(
 		true
@@ -797,8 +798,8 @@ QScintillaBackend::isModified() const
 
 void
 QScintillaBackend::configureEditorAppearance(
-		QsciLexerCPP *lexer,
-		QsciScintilla *editor
+	QsciLexerCPP *lexer,
+	QsciScintilla *editor
 )
 {
 	if (lexer == nullptr ||
@@ -806,7 +807,6 @@ QScintillaBackend::configureEditorAppearance(
 		return;
 	}
 
-	// Default font size
 	QFont editorFont =
 		editor->font();
 
@@ -814,52 +814,32 @@ QScintillaBackend::configureEditorAppearance(
 		m_fontPointSize
 	);
 
-	// Dark theme colours
-	const QColor editorBackground(
-			QStringLiteral("#121212")
+	/*
+	 * General editor presentation.
+	 */
+	editor->setMarginsBackgroundColor(
+		m_theme.marginBackground
 	);
 
-	const QColor editorForeground(
-			QStringLiteral("#b2b2b2")
+	editor->setMarginsForegroundColor(
+		m_theme.marginForeground
 	);
 
-	const QColor marginBackground(
-			QStringLiteral("#31363b")
-	);
-
-	const QColor marginForeground(
-			QStringLiteral("#767676")
-	);
-
-	const QColor keywordColor(
-			QStringLiteral("#5bcdf3")
-	);
-
-	const QColor stringColor(
-			QStringLiteral("#f5d676")
-	);
-
-	const QColor commentColor(
-			QStringLiteral("#505050")
-	);
-
-	const QColor numberColor(
-			QStringLiteral("#9775da")
-	);
-
-	const QColor preprocessorColor(
-			QStringLiteral("#c22323")
-	);
-
-	const QColor operatorColor(
-			QStringLiteral("#f8f8f8")
-	);
-	
-	// Set font assignments
 	editor->setMarginsFont(
 		editorFont
 	);
 
+	editor->setCaretForegroundColor(
+		m_theme.caretForeground
+	);
+
+	editor->setCaretWidth(
+		4
+	);
+
+	/*
+	 * Line-number margin.
+	 */
 	editor->setMarginType(
 		0,
 		QsciScintilla::NumberMargin
@@ -872,25 +852,28 @@ QScintillaBackend::configureEditorAppearance(
 
 	editor->setMarginWidth(
 		0,
-		QStringLiteral("0000")
+		QStringLiteral("00000")
 	);
 
+	/*
+	 * Lexer defaults.
+	 */
 	lexer->setDefaultFont(
 		editorFont
 	);
 
-	lexer->setDefaultPaper(
-		editorBackground
-	);
-
-	lexer->setDefaultFont(
-		editorFont
+	lexer->setDefaultColor(
+		m_theme.editorForeground
 	);
 
 	lexer->setDefaultPaper(
-		editorBackground
+		m_theme.editorBackground
 	);
 
+	/*
+	 * QScintilla requires style-specific font and paper
+	 * assignments once a lexer is attached.
+	 */
 	const int cppStyles[] = {
 		QsciLexerCPP::Default,
 		QsciLexerCPP::Comment,
@@ -912,83 +895,69 @@ QScintillaBackend::configureEditorAppearance(
 		);
 
 		lexer->setPaper(
-			editorBackground,
+			m_theme.editorBackground,
 			style
 		);
 	}
 
-	// Set colour assignments
-	editor->setMarginsBackgroundColor(
-		marginBackground
-	);
-
-	editor->setMarginsForegroundColor(
-		marginForeground
-	);
-
-	editor->setCaretForegroundColor(
-		editorForeground
-	);
-
-	editor->setCaretWidth(
-		4
-	);
-
-	lexer->setDefaultColor(
-		editorForeground
+	/*
+	 * Lexer foreground colors.
+	 */
+	lexer->setColor(
+		m_theme.editorForeground,
+		QsciLexerCPP::Default
 	);
 
 	lexer->setColor(
-		commentColor,
+		m_theme.comment,
 		QsciLexerCPP::Comment
 	);
 
 	lexer->setColor(
-		commentColor,
+		m_theme.comment,
 		QsciLexerCPP::CommentLine
 	);
 
 	lexer->setColor(
-		commentColor,
+		m_theme.comment,
 		QsciLexerCPP::CommentDoc
 	);
 
 	lexer->setColor(
-		numberColor,
+		m_theme.number,
 		QsciLexerCPP::Number
 	);
 
 	lexer->setColor(
-		keywordColor,
+		m_theme.keyword,
 		QsciLexerCPP::Keyword
 	);
 
 	lexer->setColor(
-		stringColor,
+		m_theme.string,
 		QsciLexerCPP::DoubleQuotedString
 	);
 
 	lexer->setColor(
-		stringColor,
+		m_theme.character,
 		QsciLexerCPP::SingleQuotedString
 	);
 
 	lexer->setColor(
-		operatorColor,
+		m_theme.operatorColor,
 		QsciLexerCPP::Operator
 	);
 
 	lexer->setColor(
-		editorForeground,
+		m_theme.identifier,
 		QsciLexerCPP::Identifier
 	);
 
 	lexer->setColor(
-		preprocessorColor,
+		m_theme.preprocessor,
 		QsciLexerCPP::PreProcessor
 	);
 } // End configureEditorAppearance
-
 
 
 void
