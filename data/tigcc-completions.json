@@ -1,0 +1,60 @@
+{
+    "formatVersion": 1,
+    "sourceFormat": "KTIGCC",
+    "entries": [
+        {
+            "name": "printf",
+            "kind": "function",
+            "signature": "printf(const char *format, ...)",
+            "returnType": "int",
+            "description": "",
+            "header": "stdio.h",
+            "parameters": [
+                {
+                    "name": "format",
+                    "type": "const char *"
+                },
+                {
+                    "name": "...",
+                    "type": ""
+                }
+            ]
+        },
+        {
+            "name": "NULL",
+            "kind": "macro",
+            "signature": "NULL",
+            "returnType": "",
+            "description": "",
+            "header": "",
+            "parameters": []
+        },
+        {
+            "name": "uint8_t",
+            "kind": "type",
+            "signature": "uint8_t",
+            "returnType": "",
+            "description": "",
+            "header": "stdint.h",
+            "parameters": []
+        },
+        {
+            "name": "errno",
+            "kind": "variable",
+            "signature": "errno",
+            "returnType": "int",
+            "description": "",
+            "header": "errno.h",
+            "parameters": []
+        },
+        {
+            "name": "TIGCC_VERSION",
+            "kind": "constant",
+            "signature": "TIGCC_VERSION",
+            "returnType": "",
+            "description": "",
+            "header": "",
+            "parameters": []
+        }
+    ]
+}

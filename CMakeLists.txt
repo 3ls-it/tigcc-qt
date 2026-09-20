@@ -94,6 +94,10 @@ set (SOURCES
 
     src/vimbackend.cpp
     src/vimbackend.h
+
+	src/completionentry.h
+	src/completiondatabackend.cpp
+	src/completiondatabackend.h
 )
 
 if (ENABLE_KTEXTEDITOR)
@@ -117,6 +121,10 @@ endif()
 
 target_include_directories(tigcc-qt PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
 
+include(
+	GNUInstallDirs
+)
+
 target_link_libraries(tigcc-qt
     PRIVATE
         Qt6::Widgets
@@ -131,3 +139,11 @@ if (ENABLE_KTEXTEDITOR)
             KF6::TextEditor
     )
 endif(ENABLE_KTEXTEDITOR)
+
+
+install(
+	FILES
+		data/tigcc-completions.json
+	DESTINATION
+		${CMAKE_INSTALL_DATADIR}/tigcc-qt
+)
