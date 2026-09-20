@@ -58,7 +58,6 @@ QScintillaTheme::QScintillaTheme()
 {
 }
 
-
 QScintillaTheme
 QScintillaTheme::tigccDark()
 {
