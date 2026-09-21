@@ -33,7 +33,7 @@ main(int argc, char *argv[])
 	);
 
 	application.setApplicationVersion(
-		QStringLiteral("0.2.6-alpha")
+		QStringLiteral("0.2.7-alpha")
 	);
 
 	application.setApplicationDisplayName(
@@ -53,61 +53,6 @@ main(int argc, char *argv[])
 			<< "Could not load configuration:"
 			<< configurationError;
 	}
-
-
-
-	// Completion loading tests
-	CompletionDataBackend completionData;
-
-	QString completionError;
-
-	const QString completionPath =
-		CompletionDataLocator::locate(
-			&completionError
-		);
-
-	if (completionPath.isEmpty()) {
-		qWarning()
-			<< completionError;
-	} else {
-		qDebug()
-			<< "Completion data path:"
-			<< completionPath;
-
-		if (!completionData.load(
-				completionPath,
-				&completionError
-			)) {
-			qWarning()
-				<< "Completion data load failed:"
-				<< completionError;
-		} else {
-			qDebug()
-				<< "Loaded completion entries:"
-				<< completionData.entries().size();
-
-			const QList<CompletionEntry> matches =
-				completionData.findCompletions(
-					QStringLiteral("pri")
-				);
-
-			qDebug()
-				<< "Completion matches for 'pri':"
-				<< matches.size();
-
-			for (const CompletionEntry &entry :
-					matches) {
-				qDebug()
-					<< "  "
-					<< entry.name
-					<< entry.kind
-					<< entry.signature;
-			}
-		}
-	}
-	//
-
-
 
 	MainWindow mainWindow(
 		configuration

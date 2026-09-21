@@ -1,13 +1,13 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(TIGCC-Qt
-    VERSION 0.2.6
+    VERSION 0.2.7
     LANGUAGES CXX
 )
 
 set(
     TIGCC_QT_RELEASE_LABEL
-    "0.2.6-alpha"
+    "0.2.7-alpha"
 )
 
 set(CMAKE_CXX_STANDARD 17)

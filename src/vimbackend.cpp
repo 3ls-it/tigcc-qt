@@ -331,11 +331,6 @@ VimBackend::vimStateCommand(
 		"'write'], "
 		"g:tigcc_qt_save_ack_file)\" | "
 
-		"execute \"autocmd "
-		"VimLeavePre * "
-		"call writefile(['', '0', 'exit'], "
-		"g:tigcc_qt_state_file)\" | "
-
 		"augroup END"
 	).arg(
 		escapedStateFilePath,
