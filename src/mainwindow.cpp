@@ -27,11 +27,13 @@
 #include <QStatusBar>
 #include <QCloseEvent>
 
-#include "config.h"
-#include "mainwindow.h"
 #include "buildoutputwidget.h"
+#include "completiondatabackend.h"
+#include "completiondatalocator.h"
+#include "config.h"
 #include "editorbackend.h"
 #include "editorbackendfactory.h"
+#include "mainwindow.h"
 #include "projectmanager.h"
 #include "projecttreewidget.h"
 
@@ -105,6 +107,9 @@ MainWindow::MainWindow(
 
     setCentralWidget(mainSplitter);
 
+	/*
+	 * Menus section
+	 */
 	// File menu
     auto *fileMenu = menuBar()->addMenu(
 		QStringLiteral("&File")
@@ -418,10 +423,18 @@ MainWindow::MainWindow(
     helpMenu->addAction(
 		QStringLiteral("About TIGCC-Qt")
     );
+	/*
+	 * End menus
+	 */
 
     statusBar()->showMessage(
 		QStringLiteral("Ready")
     );
+
+	loadCompletionData();
+	editor->setCompletionDataBackend(
+		&m_completionData
+	);
 
 	connectEditorBackend();
 
@@ -562,6 +575,10 @@ MainWindow::switchEditorBackend(
 	editor->deleteLater();
 
 	editor = newEditor;
+
+	editor->setCompletionDataBackend(
+		&m_completionData
+	);
 
 	editorBackendType = type;
 
@@ -1447,3 +1464,53 @@ MainWindow::saveConfiguration()
 		);
 	}
 } // End saveConfiguration
+
+
+void
+MainWindow::loadCompletionData()
+{
+	QString errorMessage;
+
+	const QString completionPath =
+		CompletionDataLocator::locate(
+			&errorMessage
+		);
+
+	if (completionPath.isEmpty()) {
+		statusBar()->showMessage(
+			QStringLiteral(
+				"Completion data unavailable"
+			)
+		);
+
+		return;
+	}
+
+	if (!m_completionData.load(
+			completionPath,
+			&errorMessage
+		)) {
+		statusBar()->showMessage(
+			QStringLiteral(
+				"Completion data could not be loaded"
+			)
+		);
+
+		return;
+	}
+
+	statusBar()->showMessage(
+		QStringLiteral(
+			"Completion data loaded: %1 entries"
+		).arg(
+			m_completionData.entries().size()
+		)
+	);
+} // End loadCompletionData
+
+
+CompletionDataBackend *
+MainWindow::completionDataBackend()
+{
+	return &m_completionData;
+}

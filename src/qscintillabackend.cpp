@@ -32,6 +32,7 @@ QScintillaBackend::QScintillaBackend(
 	QWidget *parent
 )
 	: EditorBackend(parent),
+	  m_completionData(),
 	  m_tabs(new QTabWidget(parent)),
 	  m_emptyState(nullptr),
 	  m_fontPointSize(12),
@@ -102,6 +103,16 @@ QScintillaBackend::QScintillaBackend(
 		}
 	);
 } // End constructor
+
+
+
+void
+QScintillaBackend::setCompletionDataBackend(
+	const CompletionDataBackend *completionData
+)
+{
+	(void)completionData;
+} // End setCompletionDataBackend
 
 
 QWidget *

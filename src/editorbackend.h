@@ -19,6 +19,8 @@
 
 class QWidget;
 
+class CompletionDataBackend;
+
 class EditorBackend : public QObject
 {
     Q_OBJECT
@@ -32,6 +34,11 @@ public:
 
 	virtual QWidget *
 	widget() = 0;
+
+	virtual void
+	setCompletionDataBackend(
+		const CompletionDataBackend *completionData
+	);
 
 	virtual bool
 	openFile(

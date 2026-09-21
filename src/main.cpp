@@ -15,10 +15,6 @@
 #include "configuration.h"
 #include "mainwindow.h"
 
-#include "completiondatabackend.h"
-#include "completiondatalocator.h"
-#include <QDebug>
-
 
 
 int
@@ -33,7 +29,7 @@ main(int argc, char *argv[])
 	);
 
 	application.setApplicationVersion(
-		QStringLiteral("0.2.7-alpha")
+		QStringLiteral("0.2.8-alpha")
 	);
 
 	application.setApplicationDisplayName(

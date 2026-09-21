@@ -15,6 +15,7 @@
 #include <QMainWindow>
 #include <QString>
 
+#include "completiondatabackend.h"
 #include "configuration.h"
 #include "editorbackendfactory.h"
 #include "project.h"
@@ -51,6 +52,10 @@ protected:
 	) override;
 
 private:
+	void loadCompletionData();
+
+	CompletionDataBackend * completionDataBackend();
+
 	void saveConfiguration();
 
 	void updateEditorBackendActions();
@@ -79,8 +84,7 @@ private:
 		FType ftype
 	);
 
-	void
-	connectEditorBackend();
+	void connectEditorBackend();
 
 	void
 	switchEditorBackend(
@@ -92,14 +96,11 @@ private:
 		const QString &relativePath
 	);
 	
-	void
-	saveCurrentFile();
+	void saveCurrentFile();
 
-	void
-	saveAllFiles();
+	void saveAllFiles();
 
-	void
-	updateEditorInterface();
+	void updateEditorInterface();
 
 	void
 	adjustEditorFontSize(
@@ -113,6 +114,7 @@ private:
 	Project currentProject;
 	QString currentProjectFile;
 	Configuration *m_configuration;
+	CompletionDataBackend m_completionData;
 	ProjectTreeWidget *projectTree;
 	EditorBackend *editor;
 	BuildOutputWidget *buildOutput;

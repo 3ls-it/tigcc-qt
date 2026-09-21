@@ -19,3 +19,12 @@ EditorBackend::EditorBackend(
 	: QObject(parent)
 {
 }
+
+
+void
+EditorBackend::setCompletionDataBackend(
+	const CompletionDataBackend *completionData
+)
+{
+	Q_UNUSED(completionData);
+} // End setCompletionDataBackend

@@ -14,6 +14,7 @@
 
 #include <QList>
 
+#include "completiondatabackend.h"
 #include "editorbackend.h"
 #include "qscintillatheme.h"
 
@@ -25,6 +26,7 @@ class QLabel;
 class QsciScintilla;
 class QsciLexerCPP;
 
+class CompletionDataBackend;
 
 class QScintillaBackend : public EditorBackend
 {
@@ -35,6 +37,11 @@ public:
 
 	QWidget *
 	widget() override;
+
+	void
+	setCompletionDataBackend(
+		const CompletionDataBackend *completionData
+	) override;
 
 	int
 	fontPointSize() const override;
@@ -144,6 +151,7 @@ private:
 		int tabIndex
 	);
 
+	const CompletionDataBackend *m_completionData;
 	QTabWidget *m_tabs;
 	QLabel *m_emptyState;
 	QList<DocumentEntry *> m_documents;
