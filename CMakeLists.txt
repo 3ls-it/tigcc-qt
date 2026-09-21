@@ -98,6 +98,8 @@ set (SOURCES
 	src/completionentry.h
 	src/completiondatabackend.cpp
 	src/completiondatabackend.h
+	src/completiondatalocator.cpp
+	src/completiondatalocator.h
 )
 
 if (ENABLE_KTEXTEDITOR)

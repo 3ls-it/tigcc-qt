@@ -9,6 +9,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <algorithm>
 #include <QFile>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -17,6 +18,20 @@
 
 #include "completiondatabackend.h"
 
+
+
+namespace
+{
+
+QString
+normalizedCompletionName(
+	const QString &name
+)
+{
+	return name.trimmed().toCaseFolded();
+}
+
+}
 
 
 CompletionDataBackend::CompletionDataBackend()
@@ -253,8 +268,36 @@ CompletionDataBackend::load(
 		);
 	}
 
+	std::sort(
+		loadedEntries.begin(),
+		loadedEntries.end(),
+		[](const CompletionEntry &left,
+			const CompletionEntry &right) {
+			return normalizedCompletionName(
+				left.name
+			) < normalizedCompletionName(
+				right.name
+			);
+		}
+	);
+
 	m_entries =
 		loadedEntries;
+
+	m_normalizedNames.clear();
+
+	m_normalizedNames.reserve(
+		m_entries.size()
+	);
+
+	for (const CompletionEntry &entry :
+			m_entries) {
+		m_normalizedNames.append(
+			normalizedCompletionName(
+				entry.name
+			)
+		);
+	}
 
 	m_loaded =
 		true;
@@ -289,22 +332,43 @@ CompletionDataBackend::findCompletions(
 	}
 
 	const QString normalizedPrefix =
-		prefix.trimmed();
+		normalizedCompletionName(
+			prefix
+		);
 
 	if (normalizedPrefix.isEmpty()) {
 		return results;
 	}
 
-	for (const CompletionEntry &entry :
-			m_entries) {
-		if (entry.name.startsWith(
-				normalizedPrefix,
-				Qt::CaseInsensitive
+	const auto first =
+		std::lower_bound(
+			m_normalizedNames.cbegin(),
+			m_normalizedNames.cend(),
+			normalizedPrefix
+		);
+
+	const qsizetype firstIndex =
+		std::distance(
+			m_normalizedNames.cbegin(),
+			first
+		);
+
+	for (qsizetype index = firstIndex;
+			index < m_entries.size();
+			++index) {
+		if (!m_normalizedNames.at(
+				index
+			).startsWith(
+				normalizedPrefix
 			)) {
-			results.append(
-				entry
-			);
+			break;
 		}
+
+		results.append(
+			m_entries.at(
+				index
+			)
+		);
 	}
 
 	return results;

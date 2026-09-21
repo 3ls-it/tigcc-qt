@@ -15,12 +15,33 @@
 #include "configuration.h"
 #include "mainwindow.h"
 
+#include "completiondatalocator.h"
+#include <QDebug>
+
 
 
 int
 main(int argc, char *argv[])
 {
 	QApplication application(argc, argv);
+
+	//
+	QString completionError;
+
+	const QString completionPath =
+		CompletionDataLocator::locate(
+			&completionError
+		);
+
+	qDebug()
+		<< "Completion data path:"
+		<< completionPath;
+
+	if (completionPath.isEmpty()) {
+		qWarning()
+			<< completionError;
+	}
+	//
 
 	Appearance::applyDarkTheme();
 

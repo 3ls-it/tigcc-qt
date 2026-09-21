@@ -15,6 +15,7 @@
 
 #include <QList>
 #include <QString>
+#include <QVector>
 
 #include "completionentry.h"
 
@@ -44,6 +45,7 @@ public:
 
 private:
 	QList<CompletionEntry> m_entries;
+	QVector<QString> m_normalizedNames;
 	bool m_loaded;
 };
 
