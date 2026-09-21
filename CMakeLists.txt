@@ -1,13 +1,13 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(TIGCC-Qt
-    VERSION 0.2.4
+    VERSION 0.2.6
     LANGUAGES CXX
 )
 
 set(
     TIGCC_QT_RELEASE_LABEL
-    "0.2.4-alpha"
+    "0.2.6-alpha"
 )
 
 set(CMAKE_CXX_STANDARD 17)
@@ -109,7 +109,8 @@ if (ENABLE_KTEXTEDITOR)
     )
 endif(ENABLE_KTEXTEDITOR)
 
-qt_add_executable(tigcc-qt
+qt_add_executable(
+	tigcc-qt
     ${SOURCES}
 )
 
@@ -142,6 +143,13 @@ if (ENABLE_KTEXTEDITOR)
     )
 endif(ENABLE_KTEXTEDITOR)
 
+install(
+	TARGETS
+		tigcc-qt
+	RUNTIME
+	DESTINATION
+		${CMAKE_INSTALL_BINDIR}
+)
 
 install(
 	FILES
