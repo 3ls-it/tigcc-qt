@@ -15,6 +15,7 @@
 #include "configuration.h"
 #include "mainwindow.h"
 
+#include "completiondatabackend.h"
 #include "completiondatalocator.h"
 #include <QDebug>
 
@@ -24,24 +25,6 @@ int
 main(int argc, char *argv[])
 {
 	QApplication application(argc, argv);
-
-	//
-	QString completionError;
-
-	const QString completionPath =
-		CompletionDataLocator::locate(
-			&completionError
-		);
-
-	qDebug()
-		<< "Completion data path:"
-		<< completionPath;
-
-	if (completionPath.isEmpty()) {
-		qWarning()
-			<< completionError;
-	}
-	//
 
 	Appearance::applyDarkTheme();
 
@@ -70,6 +53,61 @@ main(int argc, char *argv[])
 			<< "Could not load configuration:"
 			<< configurationError;
 	}
+
+
+
+	// Completion loading tests
+	CompletionDataBackend completionData;
+
+	QString completionError;
+
+	const QString completionPath =
+		CompletionDataLocator::locate(
+			&completionError
+		);
+
+	if (completionPath.isEmpty()) {
+		qWarning()
+			<< completionError;
+	} else {
+		qDebug()
+			<< "Completion data path:"
+			<< completionPath;
+
+		if (!completionData.load(
+				completionPath,
+				&completionError
+			)) {
+			qWarning()
+				<< "Completion data load failed:"
+				<< completionError;
+		} else {
+			qDebug()
+				<< "Loaded completion entries:"
+				<< completionData.entries().size();
+
+			const QList<CompletionEntry> matches =
+				completionData.findCompletions(
+					QStringLiteral("pri")
+				);
+
+			qDebug()
+				<< "Completion matches for 'pri':"
+				<< matches.size();
+
+			for (const CompletionEntry &entry :
+					matches) {
+				qDebug()
+					<< "  "
+					<< entry.name
+					<< entry.kind
+					<< entry.signature;
+			}
+		}
+	}
+	//
+
+
 
 	MainWindow mainWindow(
 		configuration
