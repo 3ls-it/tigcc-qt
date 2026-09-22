@@ -9,6 +9,16 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+// Test includes
+#include "completiondatabackend.h"
+#include "completiondatalocator.h"
+#include "vimcompletionadapter.h"
+
+#include <QDir>
+#include <QDebug>
+#include <QStandardPaths>
+//
+
 #include <QApplication>
 
 #include "appearance.h"
@@ -29,7 +39,7 @@ main(int argc, char *argv[])
 	);
 
 	application.setApplicationVersion(
-		QStringLiteral("0.3.2-alpha")
+		QStringLiteral("0.3.3-alpha")
 	);
 
 	application.setApplicationDisplayName(
@@ -49,6 +59,56 @@ main(int argc, char *argv[])
 			<< "Could not load configuration:"
 			<< configurationError;
 	}
+
+	// Testing 1,2,3
+	CompletionDataBackend completionData;
+
+	QString completionError;
+
+	const QString completionPath =
+		CompletionDataLocator::locate(
+			&completionError
+		);
+
+	if (completionPath.isEmpty()) {
+		qWarning()
+			<< "Completion data unavailable:"
+			<< completionError;
+	} else if (!completionData.load(
+			completionPath,
+			&completionError
+		)) {
+		qWarning()
+			<< "Completion data could not be loaded:"
+			<< completionError;
+	} else {
+		const QString completionScriptPath =
+			QDir(
+				QStandardPaths::writableLocation(
+					QStandardPaths::TempLocation
+				)
+			).filePath(
+				QStringLiteral(
+					"tigcc-qt-vim-completion-test.vim"
+				)
+			);
+
+		if (!VimCompletionAdapter::writeCompletionScript(
+				&completionData,
+				completionScriptPath,
+				&completionError
+			)) {
+			qWarning()
+				<< "Could not write Vim completion script:"
+				<< completionError;
+		} else {
+			qDebug()
+				<< "Vim completion script:"
+				<< completionScriptPath;
+		}
+	}	
+	//
+
 
 	MainWindow mainWindow(
 		configuration

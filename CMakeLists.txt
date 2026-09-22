@@ -1,13 +1,13 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(TIGCC-Qt
-    VERSION 0.3.2
+    VERSION 0.3.3
     LANGUAGES CXX
 )
 
 set(
     TIGCC_QT_RELEASE_LABEL
-    "0.3.2-alpha"
+    "0.3.3-alpha"
 )
 
 set(CMAKE_CXX_STANDARD 17)
@@ -103,6 +103,9 @@ set (SOURCES
 
 	src/qscintillacompletionadapter.cpp
 	src/qscintillacompletionadapter.h
+
+	src/vimcompletionadapter.cpp
+	src/vimcompletionadapter.h
 )
 
 if (ENABLE_KTEXTEDITOR)
