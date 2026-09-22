@@ -25,6 +25,7 @@
 #include <QTabWidget>
 
 #include "qscintillabackend.h"
+#include "qscintillacompletionadapter.h"
 
 
 
@@ -32,7 +33,7 @@ QScintillaBackend::QScintillaBackend(
 	QWidget *parent
 )
 	: EditorBackend(parent),
-	  m_completionData(),
+	  m_completionData(nullptr),
 	  m_tabs(new QTabWidget(parent)),
 	  m_emptyState(nullptr),
 	  m_fontPointSize(12),
@@ -111,7 +112,7 @@ QScintillaBackend::setCompletionDataBackend(
 	const CompletionDataBackend *completionData
 )
 {
-	(void)completionData;
+	m_completionData = completionData;
 } // End setCompletionDataBackend
 
 
@@ -326,6 +327,45 @@ QScintillaBackend::openFile(
 		lexer,
 		editor
 	);
+
+	bool completionInstalled =
+		false;
+
+	if (m_completionData != nullptr &&
+		m_completionData->isLoaded()) {
+		QScintillaCompletionAdapter adapter(
+			m_completionData
+		);
+
+		QString completionError;
+
+		completionInstalled =
+			adapter.install(
+				lexer,
+				&completionError
+			);
+
+		if (!completionInstalled &&
+			!completionError.isEmpty()) {
+			emit editorError(
+				completionError
+			);
+		}
+	}
+
+	if (completionInstalled) {
+		editor->setAutoCompletionSource(
+			QsciScintilla::AcsAPIs
+		);
+
+		editor->setAutoCompletionThreshold(
+			2
+		);
+
+		editor->setAutoCompletionUseSingle(
+			QsciScintilla::AcusNever
+		);
+	}
 
 	{
 		const QSignalBlocker signalBlocker(

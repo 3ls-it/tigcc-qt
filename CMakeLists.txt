@@ -1,13 +1,13 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(TIGCC-Qt
-    VERSION 0.2.8
+    VERSION 0.3.0
     LANGUAGES CXX
 )
 
 set(
     TIGCC_QT_RELEASE_LABEL
-    "0.2.8-alpha"
+    "0.3.0-alpha"
 )
 
 set(CMAKE_CXX_STANDARD 17)
@@ -100,6 +100,9 @@ set (SOURCES
 	src/completiondatabackend.h
 	src/completiondatalocator.cpp
 	src/completiondatalocator.h
+
+	src/qscintillacompletionadapter.cpp
+	src/qscintillacompletionadapter.h
 )
 
 if (ENABLE_KTEXTEDITOR)
