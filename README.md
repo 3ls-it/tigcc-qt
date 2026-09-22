@@ -28,10 +28,10 @@ To achieve reasonable search performance, we parse, sort and load the JSON data 
 </p>
 &nbsp;
 &nbsp;
-<h4>TIGCC-Qt with QScintilla</h4>
+<h4>TIGCC-Qt with QScintilla and completion</h4>
 &nbsp;
 <div>
-  <img src="https://github.com/3ls-it/tigcc-qt/blob/main/tigcc-qt_alpha-4.png" alt="TIGCC-Qt running QScintilla">
+  <img src="https://github.com/3ls-it/tigcc-qt/blob/main/tigcc-qt_alpha-8.png" alt="TIGCC-Qt running QScintilla">
 </div>
 &nbsp;
 &nbsp;
