@@ -1,13 +1,13 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(TIGCC-Qt
-    VERSION 0.3.1
+    VERSION 0.3.2
     LANGUAGES CXX
 )
 
 set(
     TIGCC_QT_RELEASE_LABEL
-    "0.3.1-alpha"
+    "0.3.2-alpha"
 )
 
 set(CMAKE_CXX_STANDARD 17)
@@ -109,6 +109,8 @@ if (ENABLE_KTEXTEDITOR)
     list(APPEND SOURCES
         src/ktexteditorbackend.cpp
         src/ktexteditorbackend.h
+		src/ktexteditorcompletionmodel.cpp
+		src/ktexteditorcompletionmodel.h
     )
 endif(ENABLE_KTEXTEDITOR)
 

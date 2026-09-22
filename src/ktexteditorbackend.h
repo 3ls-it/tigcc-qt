@@ -17,10 +17,13 @@
 #include "editorbackend.h"
 
 
+class CompletionDataBackend;
 
 class QLabel;
 class QTabWidget;
 class QWidget;
+
+class KTextEditorCompletionModel;
 
 namespace KTextEditor
 {
@@ -40,6 +43,11 @@ public:
 
 	QWidget *
 	widget() override;
+
+	void
+	setCompletionDataBackend(
+		const CompletionDataBackend *completionData
+	) override;
 
 	bool
 	openFile(
@@ -158,5 +166,7 @@ private:
 	QTabWidget *m_tabs;
 	QList<DocumentEntry *> m_documents;
 	int m_fontPointSize;
+	const CompletionDataBackend *m_completionData;
+	KTextEditorCompletionModel *m_completionModel;
 };
 #endif // TIGCC_QT_KTEXTEDITORBACKEND_H

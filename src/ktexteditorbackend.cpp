@@ -24,6 +24,8 @@
 #include <QUrl>
 
 #include "ktexteditorbackend.h"
+#include "completiondatabackend.h"
+#include "ktexteditorcompletionmodel.h"
 
 
 
@@ -33,7 +35,9 @@ KTextEditorBackend::KTextEditorBackend(
 	: EditorBackend(parent),
 	  m_tabs(new QTabWidget(parent)),
 	  m_emptyState(nullptr),
-	  m_fontPointSize(12)
+	  m_fontPointSize(12),
+	  m_completionData(nullptr),
+	  m_completionModel(nullptr)
 {
 	m_tabs->setDocumentMode(true);
 	m_tabs->setTabsClosable(true);
@@ -201,6 +205,7 @@ KTextEditorBackend::openFile(
 		return true;
 	}
 
+
 	KTextEditor::Editor *editor =
 		KTextEditor::Editor::instance();
 
@@ -302,6 +307,12 @@ KTextEditorBackend::openFile(
 	applyFontPointSize(
 		view
 	);
+
+	if (m_completionModel != nullptr) {
+		view->registerCompletionModel(
+			m_completionModel
+		);
+	}
 
 	const QString tabLabel =
 		QFileInfo(
@@ -701,10 +712,14 @@ KTextEditorBackend::closeCurrentFile(
 		tabIndex
 	);
 
+	if (m_completionModel != nullptr) {
+		entry->view->unregisterCompletionModel(
+			m_completionModel
+		);
+	}
+
 	entry->document->deleteLater();
-
 	entry->widget->deleteLater();
-
 	delete entry;
 
 	for (DocumentEntry *remaining :
@@ -1004,3 +1019,20 @@ KTextEditorBackend::updateTabTitle(
         tabIndex;
 } // End updateTabTitle
 
+
+void
+KTextEditorBackend::setCompletionDataBackend(
+	const CompletionDataBackend *completionData
+)
+{
+	m_completionData =
+		completionData;
+
+	if (m_completionModel == nullptr) {
+		m_completionModel =
+			new KTextEditorCompletionModel(
+				m_completionData,
+				this
+			);
+	}
+} // End setCompletionDataBackend
