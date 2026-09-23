@@ -25,6 +25,8 @@ class QTabWidget;
 class QTermWidget;
 class QWidget;
 
+class CompletionDataBackend;
+
 class VimBackend : public EditorBackend
 {
 public:
@@ -36,6 +38,11 @@ public:
 
 	QWidget *
 	widget() override;
+
+	void
+	setCompletionDataBackend(
+		const CompletionDataBackend *completionData
+	) override;
 
 	bool
 	openFile(
@@ -94,6 +101,7 @@ private:
 		QString stateFilePath;
 		QString saveAckFilePath;
 		QString discardAckFilePath;
+		QString completionScriptPath;
 		QFileSystemWatcher *stateWatcher;
 		bool modified;
 		int tabIndex;
@@ -178,6 +186,7 @@ private:
 	bool m_savePending;
 	bool m_saveSucceeded;
 	VimSession *m_saveSession;
+	const CompletionDataBackend *m_completionData;
 	QEventLoop *m_discardLoop;
 	bool m_discardPending;
 	bool m_discardSucceeded;

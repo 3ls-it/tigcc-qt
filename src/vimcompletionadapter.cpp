@@ -491,7 +491,26 @@ VimCompletionAdapter::writeCompletionScript(
 
 	writeLine(
 		QStringLiteral(
-			"setlocal completefunc=TigccQtComplete"
+			"augroup TigccQtCompletion"
+		)
+	);
+
+	writeLine(
+		QStringLiteral(
+			"  autocmd!"
+		)
+	);
+
+	writeLine(
+		QStringLiteral(
+			"  autocmd VimEnter,BufEnter,BufWinEnter "
+			"* setlocal completefunc=TigccQtComplete"
+		)
+	);
+
+	writeLine(
+		QStringLiteral(
+			"augroup END"
 		)
 	);
 

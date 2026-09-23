@@ -25,7 +25,10 @@
 #include <QTimer>
 #include <QUuid>
 
+#include "completiondatabackend.h"
 #include "vimbackend.h"
+#include "vimcompletionadapter.h"
+
 
 
 VimBackend::VimBackend(
@@ -40,6 +43,7 @@ VimBackend::VimBackend(
 	  m_saveLoop(nullptr),
 	  m_savePending(false),
 	  m_saveSucceeded(false),
+	  m_completionData(nullptr),
 	  m_saveSession(nullptr),
 	  m_discardLoop(nullptr),
 	  m_discardPending(false),
@@ -170,6 +174,16 @@ VimBackend::sessionForPath(
 
 	return nullptr;
 } // End sessionForPath
+
+
+void
+VimBackend::setCompletionDataBackend(
+	const CompletionDataBackend *completionData
+)
+{
+	m_completionData =
+		completionData;
+} // End setCompletionDataBackend
  
 
 void
@@ -721,6 +735,10 @@ VimBackend::openFile(
 		stateFilePath +
 		QStringLiteral(".discard");
 
+	const QString completionScriptPath =
+		stateFilePath +
+		QStringLiteral(".completion.vim");
+
 	// Create terminal object
 	auto *terminal =
 		new QTermWidget(
@@ -764,6 +782,7 @@ VimBackend::openFile(
 			stateFilePath,
 			saveAckFilePath,
 			discardAckFilePath,
+			completionScriptPath,
 			stateWatcher,
 			false,
 			-1
@@ -907,6 +926,14 @@ VimBackend::openFile(
 	);
 
 	arguments.append(
+		QStringLiteral("-S")
+	);
+
+	arguments.append(
+		session->completionScriptPath
+	);
+
+	arguments.append(
 		session->filePath
 	);
 
@@ -933,6 +960,30 @@ VimBackend::openFile(
 	m_tabs->setCurrentIndex(
 		tabIndex
 	);
+
+	QString completionError;
+
+	if (!VimCompletionAdapter::writeCompletionScript(
+			m_completionData,
+			session->completionScriptPath,
+			&completionError
+		)) {
+		if (errorMessage != nullptr) {
+			*errorMessage =
+				completionError;
+		}
+
+		m_sessions.removeOne(
+			session
+		);
+
+		session->stateWatcher->deleteLater();
+		session->terminal->deleteLater();
+
+		delete session;
+
+		return false;
+	}
 
 	// Start Vim
 	session->terminal->startShellProgram();
@@ -1475,6 +1526,10 @@ VimBackend::removeSessionFiles(
 	QFile::remove(
 		session->discardAckFilePath
 	);
+
+	QFile::remove(
+		session->completionScriptPath
+	);
 } // End removeSessionFiles
 
 
@@ -1552,39 +1607,39 @@ VimBackend::setFontPointSize(
 
 void
 VimBackend::updateTabTitle(
-    VimSession *session
+	VimSession *session
 )
 {
-    if (session == nullptr ||
-        session->terminal == nullptr) {
-        return;
-    }
+	if (session == nullptr ||
+		session->terminal == nullptr) {
+		return;
+	}
 
-    const int tabIndex =
-        m_tabs->indexOf(
-            session->terminal
-        );
+	const int tabIndex =
+		m_tabs->indexOf(
+			session->terminal
+		);
 
-    if (tabIndex < 0) {
-        return;
-    }
+	if (tabIndex < 0) {
+		return;
+	}
 
-    QString title =
-        QFileInfo(
-            session->filePath
-        ).fileName();
+	QString title =
+		QFileInfo(
+			session->filePath
+		).fileName();
 
-    if (session->modified) {
-        title.append(
-            QStringLiteral(" *")
-        );
-    }
+	if (session->modified) {
+		title.append(
+			QStringLiteral(" *")
+		);
+	}
 
-    m_tabs->setTabText(
-        tabIndex,
-        title
-    );
+	m_tabs->setTabText(
+		tabIndex,
+		title
+	);
 
-    session->tabIndex =
-        tabIndex;
+	session->tabIndex =
+		tabIndex;
 } // End updateTabTitle
