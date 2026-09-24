@@ -10,22 +10,24 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <QAction>
 #include <QActionGroup>
+#include <QCloseEvent>
 #include <QDir>
 #include <QFile>
 #include <QFileDialog>
-#include <QAction>
 #include <QFileInfo>
-#include <QKeySequence>
-#include <QStringList>
 #include <QInputDialog>
+#include <QKeySequence>
 #include <QLineEdit>
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QSplitter>
 #include <QStatusBar>
-#include <QCloseEvent>
+#include <QStringList>
+#include <QStyle>
+#include <QToolBar>
 
 #include "buildoutputwidget.h"
 #include "completiondatabackend.h"
@@ -36,6 +38,35 @@
 #include "mainwindow.h"
 #include "projectmanager.h"
 #include "projecttreewidget.h"
+
+
+
+namespace
+{
+
+QIcon
+themeOrStandardIcon(
+	QWidget *widget,
+	const QString &themeName,
+	QStyle::StandardPixmap fallback
+)
+{
+	QIcon icon =
+		QIcon::fromTheme(
+			themeName
+		);
+
+	if (icon.isNull()) {
+		icon =
+			widget->style()->standardIcon(
+				fallback
+			);
+	}
+
+	return icon;
+}
+
+}
 
 
 
@@ -52,6 +83,7 @@ MainWindow::MainWindow(
 		  &configuration
 	  ),
 	  projectTree(new ProjectTreeWidget(this)),
+
 	  editor(
 		  createEditorBackend(
 			  configuration.defaultEditor(),
@@ -59,16 +91,31 @@ MainWindow::MainWindow(
 		  )
 	  ),
 	  buildOutput(new BuildOutputWidget(this)),
+
 	  rightSplitter(nullptr),
 	  editorBackendType(
 		  configuration.defaultEditor()
 	  ),
+
 	  qscintillaBackendAction(nullptr),
+	  vimBackendAction(nullptr),
 #ifdef USE_KTEXTEDITOR
 	  ktextEditorBackendAction(nullptr),
 #endif
-	  saveFileAction(nullptr)
+
+  	  newProjectAction(nullptr),
+	  openProjectAction(nullptr),
+	  newHeaderFileAction(nullptr),
+	  newSourceFileAction(nullptr),
+	  newGasFileAction(nullptr),
+	  quitAction(nullptr),
+	  increaseFontSizeAction(nullptr),
+	  decreaseFontSizeAction(nullptr),
+	  saveFileAction(nullptr),
+	  saveAllFilesAction(nullptr),
+	  saveProjectAction(nullptr)
 {
+
     setWindowTitle(
 		QStringLiteral("TIGCC-Qt")
     );
@@ -137,7 +184,7 @@ MainWindow::MainWindow(
 	);
 
 	// Save all
-	auto *saveAllFilesAction =
+	saveAllFilesAction =
 		fileMenu->addAction(
 			QStringLiteral("Save All")
 		);
@@ -174,7 +221,7 @@ MainWindow::MainWindow(
 		QStringLiteral("&Project")
     );
 
-	auto *newProjectAction = projectMenu->addAction(
+	newProjectAction = projectMenu->addAction(
 		QStringLiteral("&New Project")
 	);
 
@@ -185,7 +232,7 @@ MainWindow::MainWindow(
 		&MainWindow::createNewProject
 	);
 
-	auto *openProjectAction = projectMenu->addAction(
+	openProjectAction = projectMenu->addAction(
 		QStringLiteral("&Open Project")
 	);
 
@@ -200,7 +247,7 @@ MainWindow::MainWindow(
 		QStringLiteral("Build Project")
     );
 
-	auto *saveProjectAction = projectMenu->addAction(
+	saveProjectAction = projectMenu->addAction(
 		QStringLiteral("&Save Project")
 	);
 
@@ -214,7 +261,7 @@ MainWindow::MainWindow(
 	projectMenu->addSeparator();
 
 	// Project>New header files
-	auto *newHeaderFileAction = projectMenu->addAction(
+	newHeaderFileAction = projectMenu->addAction(
 		QStringLiteral("New Header File")
 	);
 
@@ -226,7 +273,7 @@ MainWindow::MainWindow(
 	);//End
 
 	// Project>New source files
-	auto *newSourceFileAction = projectMenu->addAction(
+	newSourceFileAction = projectMenu->addAction(
 		QStringLiteral("New Source File")
 	);
 
@@ -238,7 +285,7 @@ MainWindow::MainWindow(
 	);//End
 
 	// Project>New GAS files
-	auto *newGasFileAction = projectMenu->addAction(
+	newGasFileAction = projectMenu->addAction(
 		QStringLiteral("New GNU Assembly File")
 	);
 
@@ -372,7 +419,7 @@ MainWindow::MainWindow(
 			QStringLiteral("Editor Font Size")
 		);
 
-	auto *increaseFontSizeAction =
+	increaseFontSizeAction =
 		editorFontSizeMenu->addAction(
 			QStringLiteral("Increase")
 		);
@@ -394,7 +441,7 @@ MainWindow::MainWindow(
 		}
 	);
 
-	auto *decreaseFontSizeAction =
+	decreaseFontSizeAction =
 		editorFontSizeMenu->addAction(
 			QStringLiteral("Decrease")
 		);
@@ -425,6 +472,162 @@ MainWindow::MainWindow(
     );
 	/*
 	 * End menus
+	 */
+
+	/*
+	 * Toolbar
+	 */
+	auto *mainToolBar =
+		addToolBar(
+			QStringLiteral("Main")
+		);
+
+	mainToolBar->setMovable(
+		true
+	);
+
+	mainToolBar->addAction(
+		newProjectAction
+	);
+
+	mainToolBar->addAction(
+		openProjectAction
+	);
+
+	mainToolBar->addAction(
+		saveProjectAction
+	);
+
+	mainToolBar->addAction(
+		saveFileAction
+	);
+
+	mainToolBar->addAction(
+		saveAllFilesAction
+	);
+
+	mainToolBar->addSeparator();
+
+	mainToolBar->addAction(
+		newSourceFileAction
+	);
+
+	mainToolBar->addAction(
+		newHeaderFileAction
+	);
+
+	mainToolBar->addAction(
+		newGasFileAction
+	);
+
+	mainToolBar->addSeparator();
+
+	mainToolBar->addAction(
+		decreaseFontSizeAction
+	);
+
+	mainToolBar->addAction(
+		increaseFontSizeAction
+	);
+	/*
+	 * End Toolbar
+	 */
+
+	/*
+	 * Assign action icons
+	 */
+	//common actions
+	newProjectAction->setIcon(
+		themeOrStandardIcon(
+			this,
+			QStringLiteral("document-new"),
+			QStyle::SP_FileIcon
+		)
+	);
+
+	openProjectAction->setIcon(
+		themeOrStandardIcon(
+			this,
+			QStringLiteral("document-open"),
+			QStyle::SP_DialogOpenButton
+		)
+	);
+
+	saveProjectAction->setIcon(
+		themeOrStandardIcon(
+			this,
+			QStringLiteral("document-save"),
+			QStyle::SP_DialogSaveButton
+		)
+	);
+
+	saveFileAction->setIcon(
+		themeOrStandardIcon(
+			this,
+			QStringLiteral("document-save"),
+			QStyle::SP_DialogSaveButton
+		)
+	);
+
+	saveAllFilesAction->setIcon(
+		themeOrStandardIcon(
+			this,
+			QStringLiteral("document-save-all"),
+			QStyle::SP_DialogSaveButton
+		)
+	);
+
+	quitAction->setIcon(
+		themeOrStandardIcon(
+			this,
+			QStringLiteral("application-exit"),
+			QStyle::SP_DialogCloseButton
+		)
+	);
+
+	// New file actions
+	newSourceFileAction->setIcon(
+		themeOrStandardIcon(
+			this,
+			QStringLiteral("text-x-csrc"),
+			QStyle::SP_FileIcon
+		)
+	);
+
+	newHeaderFileAction->setIcon(
+		themeOrStandardIcon(
+			this,
+			QStringLiteral("text-x-chdr"),
+			QStyle::SP_FileIcon
+		)
+	);
+
+	newGasFileAction->setIcon(
+		themeOrStandardIcon(
+			this,
+			QStringLiteral("text-x-asm"),
+			QStyle::SP_FileIcon
+		)
+	);
+
+	// Font actions
+	decreaseFontSizeAction->setIcon(
+		themeOrStandardIcon(
+			this,
+			QStringLiteral("format-font-size-less"),
+			QStyle::SP_ArrowDown
+		)
+	);
+
+	increaseFontSizeAction->setIcon(
+		themeOrStandardIcon(
+			this,
+			QStringLiteral("format-font-size-more"),
+			QStyle::SP_ArrowUp
+		)
+	);
+	/*
+	 * End action icons
 	 */
 
     statusBar()->showMessage(
@@ -835,6 +1038,12 @@ MainWindow::updateProjectInterface()
 				.arg(currentProject.name())
 		);
 	}
+
+	if (saveProjectAction != nullptr) {
+		saveProjectAction->setEnabled(
+			!currentProjectFile.isEmpty()
+		);
+	}
 }
 
 
@@ -1232,6 +1441,12 @@ MainWindow::updateEditorInterface()
 	setWindowTitle(
 		windowTitle
 	);
+
+	if (saveAllFilesAction != nullptr) {
+		saveAllFilesAction->setEnabled(
+			editor->hasModifiedFiles()
+		);
+	}
 
 	if (saveFileAction != nullptr) {
 		saveFileAction->setEnabled(

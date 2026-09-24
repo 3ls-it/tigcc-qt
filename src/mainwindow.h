@@ -109,8 +109,11 @@ private:
 
 	QSplitter *rightSplitter;
 	EditorBackendType editorBackendType;
+
 	QAction *qscintillaBackendAction;
+	QAction *vimBackendAction;
 	QAction *ktextEditorBackendAction;
+
 	Project currentProject;
 	QString currentProjectFile;
 	Configuration *m_configuration;
@@ -118,8 +121,18 @@ private:
 	ProjectTreeWidget *projectTree;
 	EditorBackend *editor;
 	BuildOutputWidget *buildOutput;
-	QAction *vimBackendAction;
+
+	QAction *newProjectAction;
+	QAction *openProjectAction;
+	QAction *newHeaderFileAction;
+	QAction *newSourceFileAction;
+	QAction *newGasFileAction;
+	QAction *quitAction;
+	QAction *increaseFontSizeAction;
+	QAction *decreaseFontSizeAction;
 	QAction *saveFileAction;
+	QAction *saveAllFilesAction;
+	QAction *saveProjectAction;
 };
 
 #endif // TIGCC_QT_MAINWINDOW_H
