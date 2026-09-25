@@ -9,9 +9,125 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <QApplication>
+#include <QIcon>
+#include <QPainter>
+#include <QPalette>
+#include <QPixmap>
+#include <QSize>
+#include <QStyle>
 #include <QTreeWidgetItem>
 
 #include "projecttreewidget.h"
+
+
+
+namespace
+{
+
+QIcon
+themeOrStandardIcon(
+	QWidget *widget,
+	const QString &themeName,
+	QStyle::StandardPixmap fallback
+)
+{
+	QIcon icon =
+		QIcon::fromTheme(
+			themeName
+		);
+
+	if (icon.isNull()) {
+		icon =
+			widget->style()->standardIcon(
+				fallback
+			);
+	}
+
+	return icon;
+}
+
+
+QIcon
+tintedIcon(
+	const QIcon &source,
+	const QColor &color,
+	const QSize &size
+)
+{
+	if (source.isNull()) {
+		return QIcon();
+	}
+
+	const QPixmap sourcePixmap =
+		source.pixmap(
+			size
+		);
+
+	if (sourcePixmap.isNull()) {
+		return QIcon();
+	}
+
+	QPixmap tintedPixmap(
+		sourcePixmap.size()
+	);
+
+	tintedPixmap.fill(
+		Qt::transparent
+	);
+
+	QPainter painter(
+		&tintedPixmap
+	);
+
+	painter.drawPixmap(
+		0,
+		0,
+		sourcePixmap
+	);
+
+	painter.setCompositionMode(
+		QPainter::CompositionMode_SourceIn
+	);
+
+	painter.fillRect(
+		tintedPixmap.rect(),
+		color
+	);
+
+	painter.end();
+
+	return QIcon(
+		tintedPixmap
+	);
+}
+
+
+QIcon
+visibleTreeIcon(
+	QWidget *widget,
+	const QString &themeName,
+	QStyle::StandardPixmap fallback,
+	const QColor &color
+)
+{
+	const QIcon sourceIcon =
+		themeOrStandardIcon(
+			widget,
+			themeName,
+			fallback
+		);
+
+	return tintedIcon(
+		sourceIcon,
+		color,
+		QSize(
+			22,
+			22
+		)
+	);
+}
+}
 
 
 
@@ -25,16 +141,42 @@ ProjectTreeWidget::ProjectTreeWidget(QWidget *parent)
 		this,
 		&ProjectTreeWidget::handleItemDoubleClicked
     );
+
+	setIconSize(
+		QSize(
+			22,
+			22
+		)
+	);
+
 }
 
 
 void
 ProjectTreeWidget::setProject(const Project &project)
 {
+	const QColor folderColor(
+		QStringLiteral("#f5d676")
+	);
+
+	const QColor projectColor(
+		QStringLiteral("#81a1c1")
+	);
+
 	clear();
 
 	// Root of tree
 	auto *projectItem = new QTreeWidgetItem(this);
+
+	projectItem->setIcon(
+		0,
+		visibleTreeIcon(
+			this,
+			QStringLiteral("project-development"),
+			QStyle::SP_DirHomeIcon,
+			projectColor
+		)
+	);
 
 	projectItem->setText(
 		0,
@@ -51,6 +193,16 @@ ProjectTreeWidget::setProject(const Project &project)
 	headersItem->setText(
 		0,
 		QStringLiteral("Header Files")
+	);
+
+	headersItem->setIcon(
+		0,
+		visibleTreeIcon(
+			this,
+			QStringLiteral("folder"),
+			QStyle::SP_DirIcon,
+			folderColor
+		)
 	);
 
 	for (const QString &path : project.headerFiles()) {
@@ -80,6 +232,16 @@ ProjectTreeWidget::setProject(const Project &project)
 		QStringLiteral("Source Files")
 	);
 
+	sourcesItem->setIcon(
+		0,
+		visibleTreeIcon(
+			this,
+			QStringLiteral("folder"),
+			QStyle::SP_DirIcon,
+			folderColor
+		)
+	);
+
 	for (const QString &path : project.sourceFiles()) {
 		auto *fileItem = new QTreeWidgetItem(
 			sourcesItem
@@ -105,6 +267,16 @@ ProjectTreeWidget::setProject(const Project &project)
 	gasItem->setText(
 		0,
 		QStringLiteral("GNU Assembly Files")
+	);
+
+	gasItem->setIcon(
+		0,
+		visibleTreeIcon(
+			this,
+			QStringLiteral("folder"),
+			QStyle::SP_DirIcon,
+			folderColor
+		)
 	);
 
 	for (const QString &path : project.gasFiles()) {

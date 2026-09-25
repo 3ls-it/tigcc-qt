@@ -65,7 +65,6 @@ themeOrStandardIcon(
 
 	return icon;
 }
-
 }
 
 
@@ -146,6 +145,8 @@ MainWindow::MainWindow(
 		this
     );
 
+	projectTree->setMinimumWidth(256);
+
     mainSplitter->addWidget(projectTree);
     mainSplitter->addWidget(rightSplitter);
 
@@ -189,6 +190,10 @@ MainWindow::MainWindow(
 			QStringLiteral("Save All")
 		);
 
+	saveAllFilesAction->setEnabled(
+		false
+	);
+
 	saveAllFilesAction->setShortcut(
 		QKeySequence(
 			Qt::CTRL |
@@ -205,7 +210,7 @@ MainWindow::MainWindow(
 	);
 
 	// File>Quit
-    auto *quitAction = fileMenu->addAction(
+    quitAction = fileMenu->addAction(
 		QStringLiteral("&Quit")
     );
 
@@ -249,6 +254,10 @@ MainWindow::MainWindow(
 
 	saveProjectAction = projectMenu->addAction(
 		QStringLiteral("&Save Project")
+	);
+
+	saveProjectAction->setEnabled(
+		!currentProjectFile.isEmpty()
 	);
 
 	connect(
@@ -605,7 +614,7 @@ MainWindow::MainWindow(
 	newGasFileAction->setIcon(
 		themeOrStandardIcon(
 			this,
-			QStringLiteral("text-x-asm"),
+			QStringLiteral("text-x-script"),
 			QStyle::SP_FileIcon
 		)
 	);
