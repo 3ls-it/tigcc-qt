@@ -18,6 +18,34 @@
 
 
 
+namespace
+{
+
+QString
+completionArguments(
+	const CompletionEntry &entry
+)
+{
+	const QString signature =
+		entry.signature.trimmed();
+
+	const QString name =
+		entry.name.trimmed();
+
+	if (signature.startsWith(
+			name
+		)) {
+		return signature.mid(
+			name.size()
+		).trimmed();
+	}
+
+	return signature;
+}
+
+}
+
+
 KTextEditorCompletionModel::KTextEditorCompletionModel(
 	const CompletionDataBackend *completionData,
 	QObject *parent
@@ -127,7 +155,9 @@ KTextEditorCompletionModel::itemData(
 		case KTextEditor::CodeCompletionModel::Arguments:
 			result.insert(
 				Qt::DisplayRole,
-				entry.signature
+				completionArguments(
+					entry
+				)
 			);
 			break;
 
