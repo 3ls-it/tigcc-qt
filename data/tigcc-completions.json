@@ -60792,30 +60792,27 @@
     {
       "name": "getc",
       "kind": "function",
-      "signature": "getcfgetc",
-      "returnType": "",
+      "signature": "getc(FILE *stream);",
+      "returnType": "short",
       "description": "Gets a character from a stream.",
       "header": "stdio.h",
       "parameters": [
         {
-          "name": "fgetc",
-          "type": ""
+          "name": "stream",
+          "type": "FILE *"
         }
-      ]
+      ],
+      "aliasOf": "fgetc"
     },
     {
       "name": "getchar",
       "kind": "function",
-      "signature": "getcharfgetchar",
-      "returnType": "",
+      "signature": "getchar(void);",
+      "returnType": "short",
       "description": "Gets a character from the keyboard (with echoing to the screen).",
       "header": "stdio.h",
-      "parameters": [
-        {
-          "name": "fgetchar",
-          "type": ""
-        }
-      ]
+      "parameters": [],
+      "aliasOf": "fgetchar"
     },
     {
       "name": "gets",
@@ -60914,30 +60911,36 @@
     {
       "name": "putc",
       "kind": "function",
-      "signature": "putcfputc",
-      "returnType": "",
+      "signature": "putc(short c, FILE *stream);",
+      "returnType": "short",
       "description": "Writes a character to a stream.",
       "header": "stdio.h",
       "parameters": [
         {
-          "name": "fputc",
-          "type": ""
+          "name": "c",
+          "type": "short"
+        },
+        {
+          "name": "stream",
+          "type": "FILE *"
         }
-      ]
+      ],
+      "aliasOf": "fputc"
     },
     {
       "name": "putchar",
       "kind": "function",
-      "signature": "putcharfputchar",
-      "returnType": "",
+      "signature": "putchar(short c);",
+      "returnType": "short",
       "description": "Outputs a character to the screen in TTY mode.",
       "header": "stdio.h",
       "parameters": [
         {
-          "name": "fputchar",
-          "type": ""
+          "name": "c",
+          "type": "short"
         }
-      ]
+      ],
+      "aliasOf": "fputchar"
     },
     {
       "name": "puts",
@@ -60956,16 +60959,17 @@
     {
       "name": "remove",
       "kind": "function",
-      "signature": "removeunlink",
-      "returnType": "",
+      "signature": "remove(const char *filename);",
+      "returnType": "short",
       "description": "Macro that removes a file.",
       "header": "stdio.h",
       "parameters": [
         {
-          "name": "unlink",
-          "type": ""
+          "name": "filename",
+          "type": "const char *"
         }
-      ]
+      ],
+      "aliasOf": "unlink"
     },
     {
       "name": "rename",

@@ -17,6 +17,7 @@ import argparse
 import json
 import re
 import sys
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable
@@ -97,6 +98,29 @@ def parse_prefix(prefix: str) -> tuple[str, str]:
         return "keyword", ""
 
     return value.split(maxsplit=1)[0].lower(), ""
+
+
+def is_function_alias(
+    kind: str,
+    postfix: str,
+) -> bool:
+    """
+    Return True when a function's Postfix is a bare
+    symbol name rather than a parameter list.
+
+    Example:
+        Postfix=(short c);  -> normal function
+        Postfix=fputchar    -> alias
+    """
+    return (
+        kind == "function"
+        and bool(postfix.strip())
+        and not postfix.lstrip().startswith("(")
+        and re.fullmatch(
+            r"[A-Za-z_][A-Za-z0-9_]*",
+            postfix.strip(),
+        ) is not None
+    )
 
 
 def split_top_level_parameters(text: str) -> list[str]:
@@ -242,25 +266,40 @@ def convert_entry(
         fields.get("Comment", "")
     )
 
-    kind, return_type = parse_prefix(prefix)
-
-    signature = make_signature(
-        name,
-        kind,
-        postfix,
+    kind, return_type = parse_prefix(
+        prefix
     )
 
-    parameters: list[dict[str, str]] = []
+    alias_of = ""
 
-    if kind == "function":
-        parameters = [
-            parse_parameter(parameter)
-            for parameter in split_top_level_parameters(
-                postfix
-            )
-        ]
+    if is_function_alias(
+        kind,
+        postfix,
+    ):
+        alias_of = postfix.strip()
 
-    return {
+        signature = name
+
+        parameters = []
+
+    else:
+        signature = make_signature(
+            name,
+            kind,
+            postfix,
+        )
+
+        parameters = []
+
+        if kind == "function":
+            parameters = [
+                parse_parameter(parameter)
+                for parameter in split_top_level_parameters(
+                    postfix
+                )
+            ]
+
+    result = {
         "name": name,
         "kind": kind,
         "signature": signature,
@@ -269,6 +308,115 @@ def convert_entry(
         "header": legacy_entry.included,
         "parameters": parameters,
     }
+
+    if alias_of:
+        result["aliasOf"] = alias_of
+
+    return result
+
+
+def resolve_function_aliases(
+    entries: list[dict],
+    warnings: list[str],
+) -> None:
+    """
+    Resolve function aliases after all entries have been
+    parsed.
+
+    Alias targets are preferred from the same header.
+    """
+    entries_by_key: dict[
+        tuple[str, str, str],
+        list[dict],
+    ] = defaultdict(list)
+
+    for entry in entries:
+        key = (
+            entry.get("name", ""),
+            entry.get("header", ""),
+            entry.get("kind", ""),
+        )
+
+        entries_by_key[key].append(
+            entry
+        )
+
+    for entry in entries:
+        alias_of = entry.get(
+            "aliasOf",
+            "",
+        ).strip()
+
+        if not alias_of:
+            continue
+
+        target_key = (
+            alias_of,
+            entry.get("header", ""),
+            "function",
+        )
+
+        candidates = entries_by_key.get(
+            target_key,
+            [],
+        )
+
+        if len(candidates) == 0:
+            warnings.append(
+                f"Could not resolve alias "
+                f"{entry.get('name', '')} -> {alias_of} "
+                f"in {entry.get('header', '<unknown>')}"
+            )
+
+            continue
+
+        if len(candidates) > 1:
+            warnings.append(
+                f"Ambiguous alias "
+                f"{entry.get('name', '')} -> {alias_of} "
+                f"in {entry.get('header', '<unknown>')}"
+            )
+
+            continue
+
+        target = candidates[0]
+
+        target_signature = target.get(
+                "signature",
+                "",
+            )
+
+        target_name = target.get(
+                "name",
+                "",
+            )
+
+        alias_name = entry.get(
+                "name",
+                "",
+            )
+
+        if target_signature.startswith(
+            target_name
+        ):
+            entry["signature"] = alias_name + target_signature[
+                    len(target_name):
+                ]
+        else:
+            entry["signature"] = target_signature
+
+        entry["returnType"] = target.get(
+                "returnType",
+                "",
+            )
+
+        entry["parameters"] = [
+            dict(parameter)
+            for parameter in target.get(
+                "parameters",
+                [],
+            )
+        ]
 
 
 def parse_legacy_file(
@@ -400,6 +548,11 @@ def parse_legacy_file(
             current_entry.fields[field_name] = field_value
 
     flush_entry()
+
+    resolve_function_aliases(
+        entries,
+        warnings,
+    )
 
     return entries, warnings
 
