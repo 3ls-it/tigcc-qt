@@ -374,7 +374,8 @@ VimCompletionAdapter::writeCompletionScript(
 				"'abbr': '%1', "
 				"'menu': '%2', "
 				"'kind': '%3', "
-				"'info': '%4'})"
+				"'info': '%4', "
+				"'dup': 1})"
 			).arg(
 				word,
 				menu,
