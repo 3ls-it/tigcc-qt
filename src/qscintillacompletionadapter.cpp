@@ -1,5 +1,5 @@
 /*
- * @file    src/qscintillacompletionadaptor.cpp
+ * @file    src/qscintillacompletionadapter.cpp
  * @brief   
  *
  * This file is part of TIGCC-Qt.
@@ -13,6 +13,7 @@
 #include <Qsci/qscilexer.h>
 
 #include <QString>
+#include <QStringList>
 
 #include "qscintillacompletionadapter.h"
 #include "completiondatabackend.h"
@@ -32,11 +33,47 @@ QScintillaCompletionAdapter::formatEntry(
 	const CompletionEntry &entry
 ) const
 {
+	QStringList parts;
+
 	if (!entry.signature.isEmpty()) {
-		return entry.signature;
+		parts.append(
+			entry.signature
+		);
+	} else {
+		parts.append(
+			entry.name
+		);
 	}
 
-	return entry.name;
+	if (!entry.returnType.isEmpty()) {
+		parts.append(
+			QStringLiteral(
+				"returns %1"
+			).arg(
+				entry.returnType
+			)
+		);
+	}
+
+	if (!entry.header.isEmpty()) {
+		parts.append(
+			QStringLiteral(
+				"[%1]"
+			).arg(
+				entry.header
+			)
+		);
+	}
+
+	if (!entry.description.isEmpty()) {
+		parts.append(
+			entry.description
+		);
+	}
+
+	return parts.join(
+		QStringLiteral(" — ")
+	);
 }
 
 
