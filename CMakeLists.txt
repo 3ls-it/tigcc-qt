@@ -1,13 +1,13 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(TIGCC-Qt
-    VERSION 0.5.0
+    VERSION 0.5.1
     LANGUAGES CXX
 )
 
 set(
     TIGCC_QT_RELEASE_LABEL
-    "0.5.0-alpha"
+    "0.5.1-alpha"
 )
 
 set(CMAKE_CXX_STANDARD 17)
@@ -106,6 +106,9 @@ set (SOURCES
 
 	src/vimcompletionadapter.cpp
 	src/vimcompletionadapter.h
+
+	src/uiiconutils.cpp
+	src/uiiconutils.h
 )
 
 if (ENABLE_KTEXTEDITOR)

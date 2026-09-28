@@ -38,9 +38,11 @@
 #include "mainwindow.h"
 #include "projectmanager.h"
 #include "projecttreewidget.h"
+#include "uiiconutils.h"
 
 
 
+#if 0
 namespace
 {
 
@@ -66,7 +68,7 @@ themeOrStandardIcon(
 	return icon;
 }
 }
-
+#endif
 
 
 MainWindow::MainWindow(

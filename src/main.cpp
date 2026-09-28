@@ -39,7 +39,7 @@ main(int argc, char *argv[])
 	);
 
 	application.setApplicationVersion(
-		QStringLiteral("0.5.0-alpha")
+		QStringLiteral("0.5.1-alpha")
 	);
 
 	application.setApplicationDisplayName(
