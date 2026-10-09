@@ -41,15 +41,11 @@ ProjectTreeWidget::ProjectTreeWidget(QWidget *parent)
 void
 ProjectTreeWidget::setProject(const Project &project)
 {
-	const QColor folderColor(
-		QStringLiteral("#f5d676")
-	);
-
-	const QColor projectColor(
-		QStringLiteral("#81a1c1")
-	);
 
 	clear();
+
+	const UiIconColors iconColors =
+		defaultUiIconColors();
 
 	// Root of tree
 	auto *projectItem = new QTreeWidgetItem(this);
@@ -60,7 +56,7 @@ ProjectTreeWidget::setProject(const Project &project)
 			this,
 			QStringLiteral("project-development"),
 			QStyle::SP_DirHomeIcon,
-			projectColor
+			iconColors.project
 		)
 	);
 
@@ -87,7 +83,7 @@ ProjectTreeWidget::setProject(const Project &project)
 			this,
 			QStringLiteral("folder"),
 			QStyle::SP_DirIcon,
-			folderColor
+			iconColors.folder
 		)
 	);
 
@@ -124,7 +120,7 @@ ProjectTreeWidget::setProject(const Project &project)
 			this,
 			QStringLiteral("folder"),
 			QStyle::SP_DirIcon,
-			folderColor
+			iconColors.folder
 		)
 	);
 
@@ -161,7 +157,7 @@ ProjectTreeWidget::setProject(const Project &project)
 			this,
 			QStringLiteral("folder"),
 			QStyle::SP_DirIcon,
-			folderColor
+			iconColors.folder
 		)
 	);
 

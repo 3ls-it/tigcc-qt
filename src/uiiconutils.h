@@ -22,6 +22,18 @@
 
 class QWidget;
 
+struct UiIconColors
+{
+	QColor toolbar;
+	QColor project;
+	QColor folder;
+	QColor file;
+};
+
+UiIconColors
+defaultUiIconColors();
+
+
 QIcon
 themeOrStandardIcon(
 	QWidget *widget,
@@ -29,12 +41,14 @@ themeOrStandardIcon(
 	QStyle::StandardPixmap fallback
 );
 
+
 QIcon
 tintedIcon(
 	const QIcon &source,
 	const QColor &color,
 	const QSize &size
 );
+
 
 QIcon
 visibleTreeIcon(

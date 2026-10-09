@@ -17,6 +17,35 @@
 
 
 
+UiIconColors
+defaultUiIconColors()
+{
+	UiIconColors colors;
+
+	colors.toolbar =
+		QColor(
+			QStringLiteral("#b2b2b2")
+		);
+
+	colors.project =
+		QColor(
+			QStringLiteral("#81a1c1")
+		);
+
+	colors.folder =
+		QColor(
+			QStringLiteral("#f5d676")
+		);
+
+	colors.file =
+		QColor(
+			QStringLiteral("#b2b2b2")
+		);
+
+	return colors;
+}
+
+
 QIcon
 themeOrStandardIcon(
 	QWidget *widget,
