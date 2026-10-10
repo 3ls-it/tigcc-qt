@@ -23,6 +23,7 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QSize>
 #include <QSplitter>
 #include <QStatusBar>
 #include <QStringList>
@@ -40,35 +41,6 @@
 #include "projecttreewidget.h"
 #include "uiiconutils.h"
 
-
-
-#if 0
-namespace
-{
-
-QIcon
-themeOrStandardIcon(
-	QWidget *widget,
-	const QString &themeName,
-	QStyle::StandardPixmap fallback
-)
-{
-	QIcon icon =
-		QIcon::fromTheme(
-			themeName
-		);
-
-	if (icon.isNull()) {
-		icon =
-			widget->style()->standardIcon(
-				fallback
-			);
-	}
-
-	return icon;
-}
-}
-#endif
 
 
 MainWindow::MainWindow(
@@ -114,12 +86,22 @@ MainWindow::MainWindow(
 	  decreaseFontSizeAction(nullptr),
 	  saveFileAction(nullptr),
 	  saveAllFilesAction(nullptr),
-	  saveProjectAction(nullptr)
+	  saveProjectAction(nullptr),
+	  copyAction(nullptr),
+	  pasteAction(nullptr)
 {
 
     setWindowTitle(
 		QStringLiteral("TIGCC-Qt")
     );
+
+    const UiIconColors iconColors =
+	    defaultUiIconColors();
+
+	const QSize actionIconSize(
+		22,
+		22
+	);
 
     resize(1440, 1024);
 
@@ -222,6 +204,40 @@ MainWindow::MainWindow(
 		this,
 		&QMainWindow::close
     );
+
+	// Edit menu
+	auto *editMenu =
+		menuBar()->addMenu(
+			QStringLiteral("&Edit")
+		);
+
+	copyAction =
+		editMenu->addAction(
+			QStringLiteral("&Copy")
+		);
+
+	pasteAction =
+		editMenu->addAction(
+			QStringLiteral("&Paste")
+		);
+
+	connect(
+		copyAction,
+		&QAction::triggered,
+		this,
+		[this]() {
+			editor->copySelection();
+		}
+	);
+
+	connect(
+		pasteAction,
+		&QAction::triggered,
+		this,
+		[this]() {
+			editor->pasteClipboard();
+		}
+	);	
 
 	// Project menus
     auto *projectMenu = menuBar()->addMenu(
@@ -549,92 +565,158 @@ MainWindow::MainWindow(
 	 */
 	//common actions
 	newProjectAction->setIcon(
-		themeOrStandardIcon(
-			this,
-			QStringLiteral("document-new"),
-			QStyle::SP_FileIcon
+		tintedIcon(
+			themeOrStandardIcon(
+				this,
+				QStringLiteral("document-new"),
+				QStyle::SP_FileIcon
+			),
+			iconColors.toolbar,
+			actionIconSize
 		)
 	);
 
 	openProjectAction->setIcon(
-		themeOrStandardIcon(
-			this,
-			QStringLiteral("document-open"),
-			QStyle::SP_DialogOpenButton
+		tintedIcon(
+			themeOrStandardIcon(
+				this,
+				QStringLiteral("document-open"),
+				QStyle::SP_DialogOpenButton
+			),
+			iconColors.toolbar,
+			actionIconSize
 		)
 	);
 
 	saveProjectAction->setIcon(
-		themeOrStandardIcon(
-			this,
-			QStringLiteral("document-save"),
-			QStyle::SP_DialogSaveButton
+		tintedIcon(
+			themeOrStandardIcon(
+				this,
+				QStringLiteral("document-save"),
+				QStyle::SP_DialogSaveButton
+			),
+			iconColors.toolbar,
+			actionIconSize
 		)
 	);
 
 	saveFileAction->setIcon(
-		themeOrStandardIcon(
-			this,
-			QStringLiteral("document-save"),
-			QStyle::SP_DialogSaveButton
+		tintedIcon(
+			themeOrStandardIcon(
+				this,
+				QStringLiteral("document-save"),
+				QStyle::SP_DialogSaveButton
+			),
+			iconColors.toolbar,
+			actionIconSize
 		)
 	);
 
 	saveAllFilesAction->setIcon(
-		themeOrStandardIcon(
-			this,
-			QStringLiteral("document-save-all"),
-			QStyle::SP_DialogSaveButton
+		tintedIcon(
+			themeOrStandardIcon(
+				this,
+				QStringLiteral("document-save-all"),
+				QStyle::SP_DialogSaveButton
+			),
+			iconColors.toolbar,
+			actionIconSize
 		)
 	);
 
 	quitAction->setIcon(
-		themeOrStandardIcon(
-			this,
-			QStringLiteral("application-exit"),
-			QStyle::SP_DialogCloseButton
+		tintedIcon(
+			themeOrStandardIcon(
+				this,
+				QStringLiteral("application-exit"),
+				QStyle::SP_DialogCloseButton
+			),
+			iconColors.toolbar,
+			actionIconSize
 		)
 	);
 
-	// New file actions
+	copyAction->setIcon(
+		tintedIcon(
+			themeOrStandardIcon(
+				this,
+				QStringLiteral("edit-copy"),
+				QStyle::SP_FileIcon
+			),
+			iconColors.toolbar,
+			actionIconSize
+		)
+	);
+
+	pasteAction->setIcon(
+		tintedIcon(
+			themeOrStandardIcon(
+				this,
+				QStringLiteral("edit-paste"),
+				QStyle::SP_FileIcon
+			),
+			iconColors.toolbar,
+			actionIconSize
+		)
+	);
+
 	newSourceFileAction->setIcon(
-		themeOrStandardIcon(
-			this,
-			QStringLiteral("text-x-csrc"),
-			QStyle::SP_FileIcon
+		tintedIcon(
+			themeOrStandardIcon(
+				this,
+				QStringLiteral("text-x-csrc"),
+				QStyle::SP_FileIcon
+			),
+			iconColors.toolbar,
+			actionIconSize
 		)
 	);
 
 	newHeaderFileAction->setIcon(
-		themeOrStandardIcon(
-			this,
-			QStringLiteral("text-x-chdr"),
-			QStyle::SP_FileIcon
+		tintedIcon(
+			themeOrStandardIcon(
+				this,
+				QStringLiteral("text-x-chdr"),
+				QStyle::SP_FileIcon
+			),
+			iconColors.toolbar,
+			actionIconSize
 		)
 	);
 
 	newGasFileAction->setIcon(
-		themeOrStandardIcon(
-			this,
-			QStringLiteral("text-x-script"),
-			QStyle::SP_FileIcon
+		tintedIcon(
+			themeOrStandardIcon(
+				this,
+				QStringLiteral("text-x-asm"),
+				QStyle::SP_FileIcon
+			),
+			iconColors.toolbar,
+			actionIconSize
 		)
 	);
 
-	// Font actions
 	decreaseFontSizeAction->setIcon(
-		themeOrStandardIcon(
-			this,
-			QStringLiteral("format-font-size-less"),
-			QStyle::SP_ArrowDown
+		tintedIcon(
+			themeOrStandardIcon(
+				this,
+				QStringLiteral("format-font-size-less"),
+				QStyle::SP_ArrowDown
+			),
+			iconColors.toolbar,
+			actionIconSize
 		)
 	);
 
 	increaseFontSizeAction->setIcon(
-		themeOrStandardIcon(
-			this,
-			QStringLiteral("format-font-size-more"),
-			QStyle::SP_ArrowUp
+		tintedIcon(
+			themeOrStandardIcon(
+				this,
+				QStringLiteral("format-font-size-more"),
+				QStyle::SP_ArrowUp
+			),
+			iconColors.toolbar,
+			actionIconSize
 		)
 	);
 	/*

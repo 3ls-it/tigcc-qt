@@ -40,6 +40,12 @@ public:
 		const CompletionDataBackend *completionData
 	);
 
+	virtual void
+	copySelection();
+
+	virtual void
+	pasteClipboard();
+
 	virtual bool
 	openFile(
 		const QString &filePath,

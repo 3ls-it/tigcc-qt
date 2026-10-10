@@ -178,6 +178,69 @@ KTextEditorBackend::setFontPointSize(
 } // End setFontPointSize
 
 
+void
+KTextEditorBackend::copySelection()
+{
+	DocumentEntry *entry =
+		currentDocumentEntry();
+
+	if (entry == nullptr ||
+		entry->view == nullptr) {
+		return;
+	}
+
+	const QString selectedText =
+		entry->view->selectionText();
+
+	if (selectedText.isEmpty()) {
+		return;
+	}
+
+	QClipboard *clipboard =
+		QGuiApplication::clipboard();
+
+	if (clipboard != nullptr) {
+		clipboard->setText(
+			selectedText
+		);
+	}
+} // End copySelection
+
+
+void
+KTextEditorBackend::pasteClipboard()
+{
+	DocumentEntry *entry =
+		currentDocumentEntry();
+
+	if (entry == nullptr ||
+		entry->view == nullptr) {
+		return;
+	}
+
+	QClipboard *clipboard =
+		QGuiApplication::clipboard();
+
+	if (clipboard == nullptr) {
+		return;
+	}
+
+	const QString clipboardText =
+		clipboard->text();
+
+	if (clipboardText.isEmpty()) {
+		return;
+	}
+
+	if (entry->view->selection()) {
+		entry->view->removeSelectionText();
+	}
+
+	entry->view->insertText(
+		clipboardText
+	);
+} // End pasteClipboard
+
 
 bool
 KTextEditorBackend::openFile(

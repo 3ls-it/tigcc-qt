@@ -12,9 +12,12 @@
 #ifndef TIGCC_QT_KTEXTEDITORBACKEND_H
 #define TIGCC_QT_KTEXTEDITORBACKEND_H
 
+#include <QClipboard>
+#include <QGuiApplication>
 #include <QList>
 
 #include "editorbackend.h"
+
 
 
 class CompletionDataBackend;
@@ -48,6 +51,12 @@ public:
 	setCompletionDataBackend(
 		const CompletionDataBackend *completionData
 	) override;
+
+	void
+	copySelection() override;
+
+	void
+	pasteClipboard() override;
 
 	bool
 	openFile(

@@ -27,4 +27,14 @@ EditorBackend::setCompletionDataBackend(
 )
 {
 	Q_UNUSED(completionData);
-} // End setCompletionDataBackend
+}
+
+void
+EditorBackend::copySelection()
+{
+}
+
+void
+EditorBackend::pasteClipboard()
+{
+}

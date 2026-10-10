@@ -238,6 +238,36 @@ QScintillaBackend::showEmptyState()
 }
 
 
+void
+QScintillaBackend::copySelection()
+{
+	DocumentEntry *entry =
+		currentDocumentEntry();
+
+	if (entry == nullptr ||
+		entry->editor == nullptr) {
+		return;
+	}
+
+	entry->editor->copy();
+}
+
+
+void
+QScintillaBackend::pasteClipboard()
+{
+	DocumentEntry *entry =
+		currentDocumentEntry();
+
+	if (entry == nullptr ||
+		entry->editor == nullptr) {
+		return;
+	}
+
+	entry->editor->paste();
+}
+
+
 bool
 QScintillaBackend::openFile(
 	const QString &filePath,

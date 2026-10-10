@@ -44,6 +44,12 @@ public:
 		const CompletionDataBackend *completionData
 	) override;
 
+	void
+	copySelection() override;
+
+	void
+	pasteClipboard() override;
+
 	bool
 	openFile(
 		const QString &filePath,

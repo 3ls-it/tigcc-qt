@@ -133,6 +133,8 @@ private:
 	QAction *saveFileAction;
 	QAction *saveAllFilesAction;
 	QAction *saveProjectAction;
+	QAction *copyAction;
+	QAction *pasteAction;
 };
 
 #endif // TIGCC_QT_MAINWINDOW_H

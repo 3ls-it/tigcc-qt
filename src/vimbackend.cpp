@@ -187,6 +187,36 @@ VimBackend::setCompletionDataBackend(
  
 
 void
+VimBackend::copySelection()
+{
+	VimSession *session =
+		currentSession();
+
+	if (session == nullptr ||
+		session->terminal == nullptr) {
+		return;
+	}
+
+	session->terminal->copyClipboard();
+}
+
+
+void
+VimBackend::pasteClipboard()
+{
+	VimSession *session =
+		currentSession();
+
+	if (session == nullptr ||
+		session->terminal == nullptr) {
+		return;
+	}
+
+	session->terminal->pasteClipboard();
+}
+
+
+void
 VimBackend::sendVimCommand(
 	VimSession *session,
 	const QString &command
