@@ -103,7 +103,7 @@ MainWindow::MainWindow(
 		22
 	);
 
-    resize(1440, 1024);
+    resize(1100, 800);
 
 	updateProjectInterface();
 
