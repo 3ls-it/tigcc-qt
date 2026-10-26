@@ -15,6 +15,8 @@
 #include <QString>
 #include <QStringList>
 
+#include "projectfile.h"
+
 
 
 class Project
@@ -37,6 +39,9 @@ public:
 
 	void
 	setDirectory(const QString &directory);
+
+	QList<ProjectFile>
+	visibleFiles() const;
 
 	QStringList
 	headerFiles() const;
@@ -65,12 +70,22 @@ public:
 	void
 	removeGasFile(const QString &path);
 
+	QStringList
+	additionalFiles() const;
+
+	void
+	addAdditionalFile(const QString &path);
+
+	void
+	removeAdditionalFile(const QString &path);
+
 private:
 	QString m_name;
 	QString m_directory;
 	QStringList m_headerFiles;
 	QStringList m_sourceFiles;
 	QStringList m_gasFiles;
+	QStringList m_additionalFiles;
 };
 
 #endif // TIGCC_QT_PROJECT_H

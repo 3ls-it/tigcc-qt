@@ -19,7 +19,6 @@
 
 
 
-
 bool
 ProjectManager::saveProject(
 	const Project &project,
@@ -74,6 +73,19 @@ ProjectManager::saveProject(
 		QStringLiteral("gasFiles"),
 		gasFiles
 	);
+
+	// Additional files entry
+	QJsonArray additionalFiles;
+
+	for (const QString &path : project.additionalFiles()) {
+		additionalFiles.append(path);
+	}
+
+	projectObject.insert(
+		QStringLiteral("additionalFiles"),
+		additionalFiles
+	);
+	// End entries
 
 	QFile file(filePath);
 
@@ -195,7 +207,19 @@ ProjectManager::loadProject(
 		);
 	}
 
-	*project = loadedProject;
+	// Load additional files
+	const QJsonArray additionalFiles =
+		projectObject.value(
+			QStringLiteral("additionalFiles")
+		).toArray();
 
+	for (const QJsonValue &value : additionalFiles) {
+		loadedProject.addAdditionalFile(
+			value.toString()
+		);
+	}
+
+	// Set project and return
+	*project = loadedProject;
 	return true;
 }

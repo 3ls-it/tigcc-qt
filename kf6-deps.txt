@@ -1,0 +1,14 @@
+KDE framework package needed for a KTextEditor build:
+
+kf6-ktexteditor
+kf6-kwidgetsaddons
+kf6-kcompletion
+kf6-kitemviews
+kf6-kjobwidgets
+kf6-solid
+kf6-kservice
+kf6-kxmlgui
+kf6-kconfigwidgets
+kf6-kcodecs
+kf6-kcolorscheme
+kf6-kguiaddons

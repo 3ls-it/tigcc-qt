@@ -71,6 +71,10 @@ set (SOURCES
     src/project.cpp
     src/project.h
 
+	src/projectfile.h
+    src/projectfilecategory.cpp
+    src/projectfilecategory.h
+
     src/projectmanager.cpp
     src/projectmanager.h
 

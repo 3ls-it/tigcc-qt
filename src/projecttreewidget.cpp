@@ -12,6 +12,7 @@
 #include <QStyle>
 #include <QTreeWidgetItem>
 
+#include "projectfilecategory.h"
 #include "projecttreewidget.h"
 #include "uiiconutils.h"
 
@@ -39,149 +40,119 @@ ProjectTreeWidget::ProjectTreeWidget(QWidget *parent)
 
 
 void
-ProjectTreeWidget::setProject(const Project &project)
+ProjectTreeWidget::setProject(
+        const Project &project
+)
 {
+        clear();
 
-	clear();
+        const UiIconColors iconColors =
+                defaultUiIconColors();
 
-	const UiIconColors iconColors =
-		defaultUiIconColors();
+        // Root of tree
+        auto *projectItem =
+                new QTreeWidgetItem(this);
 
-	// Root of tree
-	auto *projectItem = new QTreeWidgetItem(this);
+        projectItem->setIcon(
+                0,
+                visibleTreeIcon(
+                        this,
+                        QStringLiteral("project-development"),
+                        QStyle::SP_DirHomeIcon,
+                        iconColors.project
+                )
+        );
 
-	projectItem->setIcon(
-		0,
-		visibleTreeIcon(
-			this,
-			QStringLiteral("project-development"),
-			QStyle::SP_DirHomeIcon,
-			iconColors.project
-		)
-	);
+        projectItem->setText(
+                0,
+                project.name().isEmpty()
+                        ? QStringLiteral("Untitled")
+                        : project.name()
+        );
 
-	projectItem->setText(
-		0,
-		project.name().isEmpty()
-			? QStringLiteral("Untitled")
-			: project.name()
-	);
+        struct CategoryBranch
+        {
+                ProjectFileCategory category;
+                QTreeWidgetItem *item;
+        };
 
-	// Header files branch
-	auto *headersItem = new QTreeWidgetItem(
-		projectItem
-	);
+        const QList<ProjectFileCategory> categories = {
+                ProjectFileCategory::Header,
+                ProjectFileCategory::CSource,
+                ProjectFileCategory::GnuAssembly,
+                ProjectFileCategory::A68kAssembly,
+                ProjectFileCategory::Text,
+                ProjectFileCategory::Other,
+                ProjectFileCategory::Output
+        };
 
-	headersItem->setText(
-		0,
-		QStringLiteral("Header Files")
-	);
+        QList<CategoryBranch> branches;
 
-	headersItem->setIcon(
-		0,
-		visibleTreeIcon(
-			this,
-			QStringLiteral("folder"),
-			QStyle::SP_DirIcon,
-			iconColors.folder
-		)
-	);
+        for (const ProjectFileCategory category : categories) {
+                auto *categoryItem =
+                        new QTreeWidgetItem(projectItem);
 
-	for (const QString &path : project.headerFiles()) {
-		auto *fileItem = new QTreeWidgetItem(
-			headersItem
-		);
+                categoryItem->setText(
+                        0,
+                        projectFileCategoryName(category)
+                );
 
-		fileItem->setText(
-			0,
-			path
-		);
+                categoryItem->setIcon(
+                        0,
+                        visibleTreeIcon(
+                                this,
+                                QStringLiteral("folder"),
+                                QStyle::SP_DirIcon,
+                                iconColors.folder
+                        )
+                );
 
-		fileItem->setData(
-			0,
-			Qt::UserRole,
-			path
-		);	
-	}
+                categoryItem->setExpanded(true);
 
-	// Source files branch
-	auto *sourcesItem = new QTreeWidgetItem(
-		projectItem
-	);
+                branches.append(
+                        CategoryBranch{
+                                category,
+                                categoryItem
+                        }
+                );
+        }
 
-	sourcesItem->setText(
-		0,
-		QStringLiteral("Source Files")
-	);
+        const QList<ProjectFile> files =
+                project.visibleFiles();
 
-	sourcesItem->setIcon(
-		0,
-		visibleTreeIcon(
-			this,
-			QStringLiteral("folder"),
-			QStyle::SP_DirIcon,
-			iconColors.folder
-		)
-	);
+        for (const ProjectFile &projectFile : files) {
+                QTreeWidgetItem *categoryItem = nullptr;
+                for (const CategoryBranch &branch : branches) {
+                        if (branch.category ==
+                                projectFile.category) {
+                                categoryItem = branch.item;
+                                break;
+                        }
+                }
+                if (categoryItem == nullptr) {
+                        continue;
+                }
+                auto *fileItem =
+                        new QTreeWidgetItem(categoryItem);
+                fileItem->setText(
+                        0,
+                        projectFile.relativePath
+                );
+                fileItem->setData(
+                        0,
+                        Qt::UserRole,
+                        projectFile.relativePath
+                );
+                if (!isEditableProjectFileCategory(
+                        projectFile.category)) {
+                        fileItem->setFlags(
+                                fileItem->flags() &
+                                ~Qt::ItemIsSelectable
+                        );
+                }
+        }
 
-	for (const QString &path : project.sourceFiles()) {
-		auto *fileItem = new QTreeWidgetItem(
-			sourcesItem
-		);
-
-		fileItem->setText(
-			0,
-			path
-		);
-
-		fileItem->setData(
-			0,
-			Qt::UserRole,
-			path
-		);
-	}
-
-	// GNU Assembly files branch
-	auto *gasItem = new QTreeWidgetItem(
-		projectItem
-	);
-
-	gasItem->setText(
-		0,
-		QStringLiteral("GNU Assembly Files")
-	);
-
-	gasItem->setIcon(
-		0,
-		visibleTreeIcon(
-			this,
-			QStringLiteral("folder"),
-			QStyle::SP_DirIcon,
-			iconColors.folder
-		)
-	);
-
-	for (const QString &path : project.gasFiles()) {
-		auto *fileItem = new QTreeWidgetItem(
-			gasItem
-		);
-
-		fileItem->setText(
-			0,
-			path
-		);
-
-		fileItem->setData(
-			0,
-			Qt::UserRole,
-			path
-		);
-	}
-
-	projectItem->setExpanded(true);
-	headersItem->setExpanded(true);
-	sourcesItem->setExpanded(true);
-	gasItem->setExpanded(true);
+        projectItem->setExpanded(true);
 }
 
 
