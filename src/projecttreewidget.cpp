@@ -9,6 +9,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include <QHash>
 #include <QStyle>
 #include <QTreeWidgetItem>
 
@@ -41,118 +42,213 @@ ProjectTreeWidget::ProjectTreeWidget(QWidget *parent)
 
 void
 ProjectTreeWidget::setProject(
-        const Project &project
+	const Project &project
 )
 {
-        clear();
+	clear();
 
-        const UiIconColors iconColors =
-                defaultUiIconColors();
+	// Category icon colour
+	const QColor categoryColor =
+		QColor(
+			QStringLiteral("#b48ead")
+		);
 
-        // Root of tree
-        auto *projectItem =
-                new QTreeWidgetItem(this);
+	const UiIconColors iconColors =
+		defaultUiIconColors();
 
-        projectItem->setIcon(
-                0,
-                visibleTreeIcon(
-                        this,
-                        QStringLiteral("project-development"),
-                        QStyle::SP_DirHomeIcon,
-                        iconColors.project
-                )
-        );
+	auto *projectItem =
+		new QTreeWidgetItem(this);
 
-        projectItem->setText(
-                0,
-                project.name().isEmpty()
-                        ? QStringLiteral("Untitled")
-                        : project.name()
-        );
+	projectItem->setIcon(
+		0,
+		visibleTreeIcon(
+			this,
+			QStringLiteral("project-development"),
+			QStyle::SP_DirHomeIcon,
+			iconColors.project
+		)
+	);
 
-        struct CategoryBranch
-        {
-                ProjectFileCategory category;
-                QTreeWidgetItem *item;
-        };
+	projectItem->setText(
+		0,
+		project.name().isEmpty()
+			? QStringLiteral("Untitled")
+			: project.name()
+	);
 
-        const QList<ProjectFileCategory> categories = {
-                ProjectFileCategory::Header,
-                ProjectFileCategory::CSource,
-                ProjectFileCategory::GnuAssembly,
-                ProjectFileCategory::A68kAssembly,
-                ProjectFileCategory::Text,
-                ProjectFileCategory::Other,
-                ProjectFileCategory::Output
-        };
+	struct CategoryBranch
+	{
+		ProjectFileCategory category;
+		QTreeWidgetItem *item;
+		QHash<QString, QTreeWidgetItem *> directories;
+	};
 
-        QList<CategoryBranch> branches;
+	const QList<ProjectFileCategory> categories = {
+		ProjectFileCategory::Header,
+		ProjectFileCategory::CSource,
+		ProjectFileCategory::GnuAssembly,
+		ProjectFileCategory::A68kAssembly,
+		ProjectFileCategory::Text,
+		ProjectFileCategory::Other,
+		ProjectFileCategory::Output
+	};
 
-        for (const ProjectFileCategory category : categories) {
-                auto *categoryItem =
-                        new QTreeWidgetItem(projectItem);
+	QList<CategoryBranch> branches;
 
-                categoryItem->setText(
-                        0,
-                        projectFileCategoryName(category)
-                );
+	for (const ProjectFileCategory category : categories) {
+		auto *categoryItem =
+			new QTreeWidgetItem(projectItem);
 
-                categoryItem->setIcon(
-                        0,
-                        visibleTreeIcon(
-                                this,
-                                QStringLiteral("folder"),
-                                QStyle::SP_DirIcon,
-                                iconColors.folder
-                        )
-                );
+		categoryItem->setText(
+			0,
+			projectFileCategoryName(category)
+		);
 
-                categoryItem->setExpanded(true);
+		categoryItem->setIcon(
+			0,
+			visibleTreeIcon(
+				this,
+				QStringLiteral("project-development"),
+				QStyle::SP_DirHomeIcon,
+				categoryColor
+			)
+			);
 
-                branches.append(
-                        CategoryBranch{
-                                category,
-                                categoryItem
-                        }
-                );
-        }
+		categoryItem->setExpanded(true);
 
-        const QList<ProjectFile> files =
-                project.visibleFiles();
+		branches.append(
+			CategoryBranch{
+				category,
+				categoryItem,
+				{}
+			}
+		);
+	}
 
-        for (const ProjectFile &projectFile : files) {
-                QTreeWidgetItem *categoryItem = nullptr;
-                for (const CategoryBranch &branch : branches) {
-                        if (branch.category ==
-                                projectFile.category) {
-                                categoryItem = branch.item;
-                                break;
-                        }
-                }
-                if (categoryItem == nullptr) {
-                        continue;
-                }
-                auto *fileItem =
-                        new QTreeWidgetItem(categoryItem);
-                fileItem->setText(
-                        0,
-                        projectFile.relativePath
-                );
-                fileItem->setData(
-                        0,
-                        Qt::UserRole,
-                        projectFile.relativePath
-                );
-                if (!isEditableProjectFileCategory(
-                        projectFile.category)) {
-                        fileItem->setFlags(
-                                fileItem->flags() &
-                                ~Qt::ItemIsSelectable
-                        );
-                }
-        }
+	const QList<ProjectFile> files =
+		project.visibleFiles();
 
-        projectItem->setExpanded(true);
+	for (const ProjectFile &projectFile : files) {
+		CategoryBranch *branch =
+			nullptr;
+
+		for (CategoryBranch &candidate : branches) {
+			if (candidate.category ==
+				projectFile.category) {
+				branch = &candidate;
+				break;
+			}
+		}
+
+		if (branch == nullptr) {
+			continue;
+		}
+
+		const QStringList components =
+			projectFile.relativePath.split(
+				'/',
+				Qt::SkipEmptyParts
+			);
+
+		if (components.isEmpty()) {
+			continue;
+		}
+
+		QTreeWidgetItem *parentItem =
+			branch->item;
+
+		QString directoryPath;
+
+		for (int index = 0;
+			index < components.size() - 1;
+			++index) {
+			const QString &directoryName =
+				components.at(index);
+
+			if (!directoryPath.isEmpty()) {
+				directoryPath +=
+					QStringLiteral("/");
+			}
+
+			directoryPath +=
+				directoryName;
+
+			QTreeWidgetItem *directoryItem =
+				branch->directories.value(
+					directoryPath,
+					nullptr
+				);
+
+			if (directoryItem == nullptr) {
+				directoryItem =
+					new QTreeWidgetItem(parentItem);
+
+				directoryItem->setText(
+					0,
+					directoryName
+				);
+
+				directoryItem->setIcon(
+					0,
+					visibleTreeIcon(
+						this,
+						QStringLiteral("folder"),
+						QStyle::SP_DirIcon,
+						iconColors.folder
+					)
+				);
+
+				directoryItem->setExpanded(true);
+
+				branch->directories.insert(
+					directoryPath,
+					directoryItem
+				);
+			}
+
+			parentItem = directoryItem;
+		}
+
+		auto *fileItem =
+			new QTreeWidgetItem(parentItem);
+
+		fileItem->setText(
+			0,
+			components.last()
+		);
+
+		fileItem->setIcon(
+			0,
+			visibleTreeIcon(
+				this,
+				QStringLiteral("text-x-generic"),
+				QStyle::SP_FileIcon,
+				iconColors.file
+			)
+		);
+
+		fileItem->setData(
+			0,
+			Qt::UserRole,
+			projectFile.relativePath
+		);
+
+		fileItem->setToolTip(
+			0,
+			projectFile.relativePath
+		);
+
+		if (!isEditableProjectFileCategory(
+				projectFile.category
+			)) {
+			fileItem->setFlags(
+				fileItem->flags() &
+				~Qt::ItemIsSelectable
+			);
+		}
+	}
+
+	projectItem->setExpanded(true);
 }
 
 
@@ -184,6 +280,13 @@ ProjectTreeWidget::handleItemDoubleClicked(
 	if (relativePath.isEmpty()) {
 		return;
 	}
+
+   const ProjectFileCategory category =
+       classifyProjectFile(relativePath);
+
+   if (!isEditableProjectFileCategory(category)) {
+       return;
+   }
 
 	emit fileActivated(
 		relativePath
