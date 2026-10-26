@@ -28,22 +28,8 @@ To achieve reasonable search performance, we parse, sort and load the JSON data 
 </p>
 &nbsp;
 &nbsp;
-<h4>TIGCC-Qt with QScintilla with completion</h4>
+<h4>TIGCC-Qt with Vim </h4>
 &nbsp;
 <div>
-  <img src="https://github.com/3ls-it/tigcc-qt/blob/main/tigcc-qt_050a-qs.png" alt="TIGCC-Qt running QScintilla">
-</div>
-&nbsp;
-&nbsp;
-<h4>TIGCC-Qt with Vim in tabbed instances with completion</h4>
-&nbsp;
-<div>
-  <img src="https://github.com/3ls-it/tigcc-qt/blob/main/tigcc-qt_044a-vim.png" alt="TIGCC-Qt running Vim">
-</div>
-&nbsp;
-&nbsp;
-<h4>TIGCC-Qt with optional KTextEditor and completion menu</h4>
-&nbsp;
-<div>
-  <img src="https://github.com/3ls-it/tigcc-qt/blob/main/tigcc-qt_044a-kte.png" alt="TIGCC-Qt running KTextEditor">
+  <img src="https://github.com/3ls-it/tigcc-qt/blob/main/tigcc-qt_052a.png" alt="TIGCC-Qt running Vim">
 </div>

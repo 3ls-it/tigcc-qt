@@ -47,12 +47,6 @@ ProjectTreeWidget::setProject(
 {
 	clear();
 
-	// Category icon colour
-	const QColor categoryColor =
-		QColor(
-			QStringLiteral("#b48ead")
-		);
-
 	const UiIconColors iconColors =
 		defaultUiIconColors();
 
@@ -110,9 +104,9 @@ ProjectTreeWidget::setProject(
 				this,
 				QStringLiteral("project-development"),
 				QStyle::SP_DirHomeIcon,
-				categoryColor
+				iconColors.category
 			)
-			);
+		);
 
 		categoryItem->setExpanded(true);
 

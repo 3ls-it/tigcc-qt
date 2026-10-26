@@ -32,6 +32,12 @@ defaultUiIconColors()
 			QStringLiteral("#81a1c1")
 		);
 
+	colors.category =
+			QColor(
+					QStringLiteral("#b48ead")
+			);
+
+
 	colors.folder =
 		QColor(
 			QStringLiteral("#f5d676")

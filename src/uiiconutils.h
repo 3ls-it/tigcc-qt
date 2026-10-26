@@ -26,6 +26,7 @@ struct UiIconColors
 {
 	QColor toolbar;
 	QColor project;
+	QColor category;
 	QColor folder;
 	QColor file;
 };
